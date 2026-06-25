@@ -1,0 +1,6 @@
+/* Font stack matching mc.yunaitang.top starter-mocha theme.
+   Uses system fonts with Inter and JetBrains Mono as primary choices.
+   Font files are self-hosted by the main site; for the admin UI we rely
+   on system-installed fonts or Google Fonts as fallback. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');

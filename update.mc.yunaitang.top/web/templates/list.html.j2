@@ -1,49 +1,61 @@
 {% extends "base.html.j2" %}
-{% block title %}发布列表 - MC 启动器更新管理{% endblock %}
+{% block title %}Releases - MC Launcher Update{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>📋 发布管理</h1>
-    <a href="/admin/releases/new" class="btn btn-primary">＋ 新建发布</a>
+    <h1>Releases</h1>
+    <a href="/admin/releases/new" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Release
+    </a>
 </div>
 
 {% if request.query_params.get("created") %}
-<div class="alert alert-success">✅ 发布已创建</div>
+<div class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Release created successfully.
+</div>
 {% endif %}
 {% if request.query_params.get("updated") %}
-<div class="alert alert-success">✅ 发布已更新</div>
+<div class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Release updated successfully.
+</div>
 {% endif %}
 {% if request.query_params.get("deleted") %}
-<div class="alert alert-success">🗑 发布已删除</div>
+<div class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    Release deleted.
+</div>
 {% endif %}
 
 {# Filters #}
 <form class="filter-bar" method="GET" action="/admin/releases">
     <div class="filter-row">
         <div class="filter-item">
-            <label for="f-platform">平台</label>
+            <label for="f-platform">Platform</label>
             <select id="f-platform" name="platform" class="form-select">
-                <option value="">全部平台</option>
+                <option value="">All</option>
                 {% for p in platforms %}
                 <option value="{{ p.value }}" {% if platform == p.value %}selected{% endif %}>{{ p.value }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="filter-item">
-            <label for="f-channel">渠道</label>
-            <input type="text" id="f-channel" name="channel" value="{{ channel }}" class="form-input" placeholder="渠道名" />
+            <label for="f-channel">Channel</label>
+            <input type="text" id="f-channel" name="channel" value="{{ channel }}" class="form-input" placeholder="e.g. official" />
         </div>
         <div class="filter-item">
-            <label for="f-status">状态</label>
+            <label for="f-status">Status</label>
             <select id="f-status" name="is_active" class="form-select">
-                <option value="">全部</option>
-                <option value="active" {% if is_active == "active" %}selected{% endif %}>活跃</option>
-                <option value="inactive" {% if is_active == "inactive" %}selected{% endif %}>停用</option>
+                <option value="">All</option>
+                <option value="active" {% if is_active == "active" %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if is_active == "inactive" %}selected{% endif %}>Inactive</option>
             </select>
         </div>
         <div class="filter-item filter-actions">
-            <button type="submit" class="btn btn-secondary">筛选</button>
-            <a href="/admin/releases" class="btn btn-link">清除</a>
+            <button type="submit" class="btn btn-secondary">Filter</button>
+            <a href="/admin/releases" class="btn btn-link">Clear</a>
         </div>
     </div>
 </form>
@@ -54,16 +66,16 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>版本</th>
-                <th>平台</th>
-                <th>架构</th>
-                <th>OS 范围</th>
-                <th>渠道</th>
-                <th>构建号</th>
-                <th>状态</th>
-                <th>灰度</th>
-                <th>下载地址</th>
-                <th>操作</th>
+                <th>Version</th>
+                <th>Platform</th>
+                <th>Arch</th>
+                <th>OS Range</th>
+                <th>Channel</th>
+                <th>Build</th>
+                <th>Status</th>
+                <th>Grayscale</th>
+                <th>URL</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -76,16 +88,16 @@
                 <td>{{ r.arch or "-" }}</td>
                 <td>
                     {% if r.os_version_min or r.os_version_max %}
-                        {{ r.os_version_min or "不限" }} ~ {{ r.os_version_max or "不限" }}
+                        {{ r.os_version_min or "any" }} ~ {{ r.os_version_max or "any" }}
                     {% else %}-{% endif %}
                 </td>
                 <td>{{ r.channel or "-" }}</td>
                 <td>{{ r.build_number or "-" }}</td>
                 <td>
                     {% if r.is_active %}
-                    <span class="badge badge-active">活跃</span>
+                    <span class="badge badge-active">Active</span>
                     {% else %}
-                    <span class="badge badge-inactive">停用</span>
+                    <span class="badge badge-inactive">Inactive</span>
                     {% endif %}
                 </td>
                 <td>
@@ -95,22 +107,24 @@
                 </td>
                 <td class="url-cell">
                     {% if r.download_url %}
-                    <a href="{{ r.download_url }}" target="_blank" class="external-link">🔗</a>
+                    <a href="{{ r.download_url }}" target="_blank" rel="noopener" title="{{ r.download_url }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
                     {% else %}-{% endif %}
                 </td>
                 <td class="actions-cell">
-                    <a href="/admin/releases/{{ r.id }}/edit" class="btn btn-sm btn-outline">编辑</a>
+                    <a href="/admin/releases/{{ r.id }}/edit" class="btn btn-sm btn-outline">Edit</a>
                     <form method="POST" action="/admin/releases/{{ r.id }}/delete"
                           class="inline-form"
-                          onsubmit="return confirm('确定要删除版本 {{ r.version }} 吗？此操作不可撤销。')">
-                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                          onsubmit="return confirm('Delete version {{ r.version }}? This action cannot be undone.')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
                 </td>
             </tr>
             {% endfor %}
             {% else %}
             <tr>
-                <td colspan="11" class="empty-row">暂无发布记录。点击右上角「新建发布」创建第一个发布。</td>
+                <td colspan="11" class="empty-row">No releases yet. Click "New Release" to create one.</td>
             </tr>
             {% endif %}
         </tbody>
@@ -120,10 +134,10 @@
 {# Pagination #}
 {% if total_pages > 1 %}
 <div class="pagination">
-    <span class="page-info">{{ total }} 条记录，第 {{ page }}/{{ total_pages }} 页</span>
+    <span class="page-info">{{ total }} records, page {{ page }}/{{ total_pages }}</span>
     <div class="page-links">
         {% if page > 1 %}
-        <a href="/admin/releases?page={{ page - 1 }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}" class="btn btn-sm btn-outline">上一页</a>
+        <a href="/admin/releases?page={{ page - 1 }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}" class="btn btn-sm btn-outline">Prev</a>
         {% endif %}
 
         {% set start = [page - 2, 1] | max %}
@@ -136,7 +150,7 @@
         {% endfor %}
 
         {% if page < total_pages %}
-        <a href="/admin/releases?page={{ page + 1 }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}" class="btn btn-sm btn-outline">下一页</a>
+        <a href="/admin/releases?page={{ page + 1 }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}" class="btn btn-sm btn-outline">Next</a>
         {% endif %}
     </div>
 </div>

@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MC 启动器更新管理{% endblock %}</title>
+    <meta name="theme-color" content="#1e1e2e">
+    <title>{% block title %}MC Launcher Update{% endblock %}</title>
+    <link rel="stylesheet" href="/admin/static/fonts.css">
     <link rel="stylesheet" href="/admin/static/style.css">
     {% block head %}{% endblock %}
 </head>
 <body>
     {% if request.session.get("admin_authenticated") %}
-    <nav class="top-nav">
+    <nav class="top-nav" id="top-nav">
         <div class="nav-inner">
-            <a href="/admin/releases" class="nav-brand">🎮 MC 启动器更新管理</a>
+            <a href="/admin/releases" class="nav-brand">MC Launcher Update</a>
             <div class="nav-actions">
-                <span class="nav-user">管理员</span>
-                <a href="/admin/logout" class="nav-link">登出</a>
+                <span class="nav-user">Admin</span>
+                <a href="/admin/logout" class="nav-link">Sign Out</a>
             </div>
         </div>
     </nav>
@@ -28,6 +30,21 @@
         <p>MC Launcher Update Server v0.1.0</p>
     </footer>
 
+    <script>
+    (function() {
+        var nav = document.getElementById('top-nav');
+        if (!nav) return;
+        function onScroll() {
+            if (window.scrollY > 10) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        }
+        window.addEventListener('scroll', onScroll, {passive: true});
+        onScroll();
+    })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
