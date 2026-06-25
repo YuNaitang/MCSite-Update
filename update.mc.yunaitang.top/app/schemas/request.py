@@ -28,7 +28,7 @@ class CheckUpdateRequest(BaseModel):
     current_version: str = Field(
         ...,
         pattern=r"^\d+\.\d+\.\d+",
-        description="Current app version in semver format, e.g. '1.0.0'",
+        description="Current app version in semver format, e.g. '1.0.0' or '2.0.0-beta'",
         examples=["1.0.0"],
     )
     platform: Platform = Field(..., description="Client platform")
@@ -62,7 +62,7 @@ class CreateReleaseRequest(BaseModel):
     version: str = Field(
         ...,
         pattern=r"^\d+\.\d+\.\d+",
-        description="Semver version string, e.g. '1.3.0'",
+        description="Semver version string, e.g. '1.3.0' or '2.0.0-beta'",
     )
     platform: Optional[Platform] = Field(
         default=None, description="Target platform, or null for all"
@@ -103,7 +103,7 @@ class UpdateReleaseRequest(BaseModel):
     version: Optional[str] = Field(
         default=None,
         pattern=r"^\d+\.\d+\.\d+",
-        description="Semver version string",
+        description="Semver version string, e.g. '1.3.0' or '2.0.0-beta'",
     )
     platform: Optional[Platform] = Field(default=None)
     arch: Optional[Architecture] = Field(default=None)
@@ -129,3 +129,21 @@ class GrayscaleRequest(BaseModel):
 
     is_grayscale: bool
     grayscale_pct: Optional[int] = Field(default=None, ge=0, le=100)
+
+
+# ── User management ─────────────────────────────
+
+
+class CreateUserRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=64, description="Login username")
+    password: str = Field(..., min_length=1, max_length=128, description="Password")
+    role: str = Field(default="admin", description="Role: admin or super_admin")
+    display_name: str | None = Field(default=None, description="Display name")
+
+
+class UpdateUserRequest(BaseModel):
+    username: str | None = Field(default=None, min_length=1, max_length=64)
+    password: str | None = Field(default=None, min_length=1, max_length=128)
+    role: str | None = Field(default=None)
+    display_name: str | None = Field(default=None)
+    is_active: bool | None = Field(default=None)

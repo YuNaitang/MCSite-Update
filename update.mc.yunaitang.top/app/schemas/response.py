@@ -59,3 +59,45 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     timestamp: datetime
+
+
+class UserItem(BaseModel):
+    """A user item returned in admin responses."""
+
+    id: int
+    username: str
+    display_name: str | None = None
+    role: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedUsers(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[UserItem]
+
+
+class AuditLogItem(BaseModel):
+    id: int
+    user_id: int | None = None
+    username: str
+    action: str
+    target_type: str | None = None
+    target_id: int | None = None
+    detail: str | None = None
+    ip_address: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedAuditLogs(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[AuditLogItem]

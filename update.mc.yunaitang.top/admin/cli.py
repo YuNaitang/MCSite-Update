@@ -202,3 +202,75 @@ def delete_release(release_id):
 
 if __name__ == "__main__":
     cli()
+
+
+# ── User management ──────────────────────────────
+
+
+@cli.command("create-user")
+@click.option("--username", required=True, help="Login username")
+@click.option("--password", required=True, help="Login password")
+@click.option("--role", default="admin", help="Role: admin or super_admin")
+@click.option("--display-name", default=None, help="Display name")
+def create_user_cmd(**kwargs):
+    """Create a new admin user."""
+    from app.repositories.user_repo import create_user as _create, get_user_by_username
+    from app.core.database import async_session
+
+    async def _run():
+        async with async_session() as db:
+            existing = await get_user_by_username(db, kwargs["username"])
+            if existing:
+                click.echo(f"[ERR] User '{kwargs['username']}' already exists.")
+                return
+            user = await _create(
+                db=db,
+                username=kwargs["username"],
+                password=kwargs["password"],
+                role=kwargs["role"],
+                display_name=kwargs["display_name"],
+            )
+            click.echo(f"[OK] User created: id={user.id} username={user.username} role={user.role}")
+
+    asyncio.run(_run())
+
+
+@cli.command("list-users")
+def list_users_cmd():
+    """List all users."""
+    from app.repositories.user_repo import list_users as _list
+    from app.core.database import async_session
+
+    async def _run():
+        async with async_session() as db:
+            items, total = await _list(db)
+            click.echo(f"Total: {total} users")
+            click.echo("-" * 60)
+            for u in items:
+                status = "[active]" if u.is_active else "[inactive]"
+                click.echo(
+                    f"{status} [{u.id:>3}] {u.username:<16} "
+                    f"role={u.role:<12} "
+                    f"name={u.display_name or '-'}"
+                )
+
+    asyncio.run(_run())
+
+
+@cli.command("delete-user")
+@click.argument("user_id", type=int)
+@click.confirmation_option(prompt="Are you sure you want to delete this user?")
+def delete_user_cmd(user_id):
+    """Delete a user permanently."""
+    from app.repositories.user_repo import delete_user as _delete
+    from app.core.database import async_session
+
+    async def _run():
+        async with async_session() as db:
+            deleted = await _delete(db, user_id)
+            if deleted:
+                click.echo(f"[OK] User {user_id} deleted.")
+            else:
+                click.echo(f"[ERR] User {user_id} not found.")
+
+    asyncio.run(_run())

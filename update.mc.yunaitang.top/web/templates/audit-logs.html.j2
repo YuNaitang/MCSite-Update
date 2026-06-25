@@ -1,0 +1,101 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ _('audit_logs') }} - {{ _('title') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ _('audit_logs') }}</h1>
+</div>
+
+<form class="filter-bar" method="GET" action="/admin/audit-logs">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <div class="filter-row">
+        <div class="filter-item">
+            <label for="f-action">{{ _('audit_action') }}</label>
+            <select id="f-action" name="action" class="form-select">
+                <option value="">{{ _('all') }}</option>
+                <option value="login" {% if action == 'login' %}selected{% endif %}>{{ _('action_login') }}</option>
+                <option value="login_failed" {% if action == 'login_failed' %}selected{% endif %}>{{ _('action_login_failed') }}</option>
+                <option value="logout" {% if action == 'logout' %}selected{% endif %}>{{ _('action_logout') }}</option>
+                <option value="release_create" {% if action == 'release_create' %}selected{% endif %}>{{ _('action_release_create') }}</option>
+                <option value="release_update" {% if action == 'release_update' %}selected{% endif %}>{{ _('action_release_update') }}</option>
+                <option value="release_delete" {% if action == 'release_delete' %}selected{% endif %}>{{ _('action_release_delete') }}</option>
+                <option value="user_create" {% if action == 'user_create' %}selected{% endif %}>{{ _('action_user_create') }}</option>
+                <option value="user_update" {% if action == 'user_update' %}selected{% endif %}>{{ _('action_user_update') }}</option>
+                <option value="user_delete" {% if action == 'user_delete' %}selected{% endif %}>{{ _('action_user_delete') }}</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="f-username">{{ _('username') }}</label>
+            <input type="text" id="f-username" name="username" value="{{ username }}" class="form-input" />
+        </div>
+        <div class="filter-item filter-actions">
+            <button type="submit" class="btn btn-secondary">{{ _('filter') }}</button>
+            <a href="/admin/audit-logs?lang={{ lang }}" class="btn btn-link">{{ _('clear') }}</a>
+        </div>
+    </div>
+</form>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>{{ _('id') }}</th>
+                <th>{{ _('username') }}</th>
+                <th>{{ _('audit_action') }}</th>
+                <th>{{ _('audit_target') }}</th>
+                <th>{{ _('audit_detail') }}</th>
+                <th>{{ _('audit_ip') }}</th>
+                <th>{{ _('audit_time') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if logs %}
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.id }}</td>
+                <td>{{ log.username }}</td>
+                <td>
+                    {% set action_key = 'action_' + log.action %}
+                    {{ _(action_key) if _(action_key) != action_key else log.action }}
+                </td>
+                <td>
+                    {% if log.target_type %}{{ log.target_type }} #{{ log.target_id }}{% else %}-{% endif %}
+                </td>
+                <td class="url-cell">
+                    {% if log.detail %}
+                    <span title="{{ log.detail }}">{{ log.detail[:80] }}{% if log.detail|length > 80 %}...{% endif %}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td>{{ log.ip_address or "-" }}</td>
+                <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="7" class="empty-row">{{ _('no_audit_logs') }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    <span class="page-info">{{ total }} {{ _('records') }}, {{ _('page') }} {{ page }}/{{ total_pages }}</span>
+    <div class="page-links">
+        {% if page > 1 %}
+        <a href="/admin/audit-logs?page={{ page - 1 }}&action={{ action }}&username={{ username }}&lang={{ lang }}" class="btn btn-sm btn-outline">{{ _('prev') }}</a>
+        {% endif %}
+        {% set start = [page - 2, 1] | max %}
+        {% set end = [page + 2, total_pages] | min %}
+        {% for p in range(start, end + 1) %}
+        <a href="/admin/audit-logs?page={{ p }}&action={{ action }}&username={{ username }}&lang={{ lang }}"
+           class="btn btn-sm {% if p == page %}btn-primary{% else %}btn-outline{% endif %}">{{ p }}</a>
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="/admin/audit-logs?page={{ page + 1 }}&action={{ action }}&username={{ username }}&lang={{ lang }}" class="btn btn-sm btn-outline">{{ _('next') }}</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ _('users') }} - {{ _('title') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ _('users') }}</h1>
+    <a href="/admin/users/new?lang={{ lang }}" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        {{ _('new_user') }}
+    </a>
+</div>
+
+{% if request.query_params.get("created") %}
+<div class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    {{ _('user_created_ok') }}
+</div>
+{% endif %}
+{% if request.query_params.get("updated") %}
+<div class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    {{ _('user_updated_ok') }}
+</div>
+{% endif %}
+{% if request.query_params.get("deleted") %}
+<div class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    {{ _('user_deleted_ok') }}
+</div>
+{% endif %}
+{% if request.query_params.get("error") == "cannot_delete_self" %}
+<div class="alert alert-error">{{ _('cannot_delete_self') }}</div>
+{% endif %}
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>{{ _('id') }}</th>
+                <th>{{ _('username') }}</th>
+                <th>{{ _('display_name') }}</th>
+                <th>{{ _('role') }}</th>
+                <th>{{ _('status') }}</th>
+                <th>{{ _('actions') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if users %}
+            {% for u in users %}
+            <tr class="{% if not u.is_active %}row-inactive{% endif %}">
+                <td>{{ u.id }}</td>
+                <td class="version-cell">{{ u.username }}</td>
+                <td>{{ u.display_name or "-" }}</td>
+                <td>
+                    {% if u.role == 'super_admin' %}
+                    <span class="badge badge-active">{{ _('super_admin') }}</span>
+                    {% else %}
+                    <span class="badge badge-grayscale">{{ _('admin_role') }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u.is_active %}
+                    <span class="badge badge-active">{{ _('active') }}</span>
+                    {% else %}
+                    <span class="badge badge-inactive">{{ _('inactive') }}</span>
+                    {% endif %}
+                </td>
+                <td class="actions-cell">
+                    <a href="/admin/users/{{ u.id }}/edit?lang={{ lang }}" class="btn btn-sm btn-outline">{{ _('edit') }}</a>
+                    <form method="POST" action="/admin/users/{{ u.id }}/delete?lang={{ lang }}"
+                          class="inline-form"
+                          onsubmit="return confirm('{{ _('delete_user_confirm', username=u.username) }}')">
+                        <button type="submit" class="btn btn-sm btn-danger">{{ _('delete') }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="6" class="empty-row">{{ _('no_users') }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    <span class="page-info">{{ total }} {{ _('records') }}, {{ _('page') }} {{ page }}/{{ total_pages }}</span>
+    <div class="page-links">
+        {% if page > 1 %}
+        <a href="/admin/users?page={{ page - 1 }}&lang={{ lang }}" class="btn btn-sm btn-outline">{{ _('prev') }}</a>
+        {% endif %}
+        {% set start = [page - 2, 1] | max %}
+        {% set end = [page + 2, total_pages] | min %}
+        {% for p in range(start, end + 1) %}
+        <a href="/admin/users?page={{ p }}&lang={{ lang }}"
+           class="btn btn-sm {% if p == page %}btn-primary{% else %}btn-outline{% endif %}">{{ p }}</a>
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="/admin/users?page={{ page + 1 }}&lang={{ lang }}" class="btn btn-sm btn-outline">{{ _('next') }}</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

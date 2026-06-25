@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import settings
 from app.core.database import Base
-from app.models.release import Release  # noqa: F401 — ensure model is imported
+from app.models.release import Release  # noqa: F401
+from app.models.user import User  # noqa: F401
+from app.models.audit_log import AuditLog  # noqa: F401
 
 # Alembic Config object
 config = context.config

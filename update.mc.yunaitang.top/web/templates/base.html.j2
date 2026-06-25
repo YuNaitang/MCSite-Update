@@ -10,15 +10,21 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    {% if request.session.get("admin_authenticated") %}
+    {% if request.session.get("user_id") %}
     <nav class="top-nav" id="top-nav">
         <div class="nav-inner">
             <a href="/admin/releases?lang={{ lang }}" class="nav-brand">{{ _('title') }}</a>
+            <div class="nav-links-left">
+                <a href="/admin/releases?lang={{ lang }}" class="nav-link">{{ _('releases') }}</a>
+                {% if request.session.get("role") == "super_admin" %}
+                <a href="/admin/users?lang={{ lang }}" class="nav-link">{{ _('nav_users') }}</a>
+                <a href="/admin/audit-logs?lang={{ lang }}" class="nav-link">{{ _('nav_audit') }}</a>
+                {% endif %}
+            </div>
             <div class="nav-actions">
                 <a href="{{ toggle_url }}" class="lang-toggle" title="{{ 'Switch to English' if toggle_lang == 'en' else '切换到中文' }}">
                     {{ 'EN' if toggle_lang == 'en' else '中文' }}
                 </a>
-                <span class="nav-user">{{ _('nav_admin') }}</span>
                 <a href="/admin/logout?lang={{ lang }}" class="nav-link">{{ _('nav_logout') }}</a>
             </div>
         </div>

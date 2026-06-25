@@ -1,6 +1,9 @@
 """Admin web UI routes — server-rendered HTML pages for release management."""
 
+import json
+import os
 from typing import Optional
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -8,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.models.user import User
+from app.repositories import audit_repo
 from app.repositories.release_repo import (
     create_release,
     delete_release,
@@ -15,10 +20,17 @@ from app.repositories.release_repo import (
     list_releases,
     update_release,
 )
+from app.repositories.user_repo import (
+    create_user,
+    delete_user,
+    get_user_by_id,
+    get_user_by_username,
+    list_users,
+    update_user,
+    verify_password,
+)
 from app.schemas.request import Architecture, Platform
 from app.services.semver_utils import parse_semver
-
-import os
 
 router = APIRouter(prefix="/admin", tags=["admin_web"])
 
@@ -32,11 +44,14 @@ LANG = {
     "en": {
         "title": "MC Launcher Update",
         "login_title": "MC Launcher Update",
-        "login_subtitle": "Enter admin password to continue",
+        "login_subtitle": "Sign in to continue",
+        "login_username": "Username",
+        "login_username_placeholder": "Enter username",
         "login_password": "Password",
         "login_placeholder": "Enter password",
         "login_button": "Sign In",
-        "login_error": "Incorrect password",
+        "login_error": "Incorrect username or password",
+        "login_disabled": "This account has been disabled",
         "releases": "Releases",
         "new_release": "New Release",
         "create_release": "Create Release",
@@ -93,20 +108,62 @@ LANG = {
         "platform_hint": "Leave empty to match all platforms",
         "arch_hint": "Leave empty to match all architectures",
         "build_hint": "For reference only, not used in version comparison",
-        "download_hint": "Link to community download page (QQ group announcement, forum post, etc.)",
+        "download_hint": "Link to community download page",
         "changelog_hint": "Markdown supported",
         "active_hint": "When inactive, app clients will not receive this update",
         "grayscale_hint": "Only {pct}% of users will receive this grayscale version",
         "form_required": "Required",
+        # User management
+        "users": "Users",
+        "new_user": "New User",
+        "create_user": "Create User",
+        "edit_user": "Edit User",
+        "username": "Username",
+        "password": "Password",
+        "password_hint": "Leave empty to keep current password",
+        "display_name": "Display Name",
+        "role": "Role",
+        "super_admin": "Super Admin",
+        "admin_role": "Admin",
+        "no_users": "No users found.",
+        "user_created_ok": "User created successfully.",
+        "user_updated_ok": "User updated successfully.",
+        "user_deleted_ok": "User deleted.",
+        "delete_user_confirm": "Delete user {username}? This action cannot be undone.",
+        "cannot_delete_self": "Cannot delete your own account.",
+        "user_password_hint_new": "Set login password",
+        # Audit logs
+        "audit_logs": "Audit Logs",
+        "audit_action": "Action",
+        "audit_target": "Target",
+        "audit_detail": "Detail",
+        "audit_ip": "IP",
+        "audit_time": "Time",
+        "no_audit_logs": "No audit logs found.",
+        "nav_users": "Users",
+        "nav_audit": "Logs",
+        # Actions (for logs)
+        "action_login": "Login",
+        "action_logout": "Logout",
+        "action_login_failed": "Login Failed",
+        "action_release_create": "Create Release",
+        "action_release_update": "Update Release",
+        "action_release_delete": "Delete Release",
+        "action_user_create": "Create User",
+        "action_user_update": "Update User",
+        "action_user_delete": "Delete User",
     },
     "zh": {
         "title": "MC Launcher Update",
         "login_title": "MC Launcher Update",
-        "login_subtitle": "请输入管理密码",
+        "login_subtitle": "请输入用户名和密码",
+        "login_username": "用户名",
+        "login_username_placeholder": "请输入用户名",
         "login_password": "密码",
         "login_placeholder": "请输入密码",
         "login_button": "登录",
-        "login_error": "密码错误",
+        "login_error": "用户名或密码错误",
+        "login_disabled": "此账号已被禁用",
         "releases": "发布管理",
         "new_release": "新建发布",
         "create_release": "创建发布",
@@ -168,12 +225,50 @@ LANG = {
         "active_hint": "停用后 app 端不会收到此版本的更新提醒",
         "grayscale_hint": "仅有 {pct}% 的用户会收到此灰度版本",
         "form_required": "必填",
+        # User management
+        "users": "用户管理",
+        "new_user": "新建用户",
+        "create_user": "创建用户",
+        "edit_user": "编辑用户",
+        "username": "用户名",
+        "password": "密码",
+        "password_hint": "留空则不修改密码",
+        "display_name": "显示名称",
+        "role": "角色",
+        "super_admin": "超级管理员",
+        "admin_role": "管理员",
+        "no_users": "暂无用户。",
+        "user_created_ok": "用户已创建",
+        "user_updated_ok": "用户已更新",
+        "user_deleted_ok": "用户已删除",
+        "delete_user_confirm": "确定要删除用户 {username} 吗？此操作不可撤销。",
+        "cannot_delete_self": "不能删除自己的账号。",
+        "user_password_hint_new": "设置登录密码",
+        # Audit logs
+        "audit_logs": "操作日志",
+        "audit_action": "操作",
+        "audit_target": "对象",
+        "audit_detail": "详情",
+        "audit_ip": "IP",
+        "audit_time": "时间",
+        "no_audit_logs": "暂无操作日志。",
+        "nav_users": "用户",
+        "nav_audit": "日志",
+        # Actions (for logs)
+        "action_login": "登录",
+        "action_logout": "登出",
+        "action_login_failed": "登录失败",
+        "action_release_create": "创建发布",
+        "action_release_update": "更新发布",
+        "action_release_delete": "删除发布",
+        "action_user_create": "创建用户",
+        "action_user_update": "更新用户",
+        "action_user_delete": "删除用户",
     },
 }
 
 
 def _t(lang: str, key: str, **fmt) -> str:
-    """Look up translation for key in given language, with optional formatting."""
     text = LANG.get(lang, LANG["en"]).get(key, LANG["en"].get(key, key))
     if fmt:
         text = text.format(**fmt)
@@ -181,7 +276,6 @@ def _t(lang: str, key: str, **fmt) -> str:
 
 
 def _lang(request: Request) -> str:
-    """Extract language from query params or session, default 'zh'."""
     qp = request.query_params.get("lang", "")
     if qp in ("zh", "en"):
         return qp
@@ -189,34 +283,6 @@ def _lang(request: Request) -> str:
     if session_lang in ("zh", "en"):
         return session_lang
     return "zh"
-
-
-def _render_with_i18n(
-    request: Request, template_name: str, **context
-) -> HTMLResponse:
-    """Render a Jinja2 template with lang and translation helper injected."""
-    if _jinja_env is None:
-        return HTMLResponse(
-            "<h1>Template engine not available</h1>", status_code=500
-        )
-    lang = _lang(request)
-    context.setdefault("request", request)
-    context.setdefault("lang", lang)
-    context.setdefault("_", lambda key, **fmt: _t(lang, key, **fmt))
-
-    # Build toggle URL: same path, swap lang
-    toggle_lang = "zh" if lang == "en" else "en"
-    toggle_params = dict(request.query_params)
-    toggle_params["lang"] = toggle_lang
-    from urllib.parse import urlencode
-
-    toggle_qs = urlencode(toggle_params)
-    toggle_url = request.url.path + ("?" + toggle_qs if toggle_qs else "")
-    context.setdefault("toggle_lang", toggle_lang)
-    context.setdefault("toggle_url", toggle_url)
-
-    template = _jinja_env.get_template(template_name)
-    return HTMLResponse(template.render(**context))
 
 
 # ── Template helper ──────────────────────────────
@@ -232,23 +298,80 @@ except Exception:
     _jinja_env = None
 
 
+def _render_with_i18n(
+    request: Request, template_name: str, **context
+) -> HTMLResponse:
+    if _jinja_env is None:
+        return HTMLResponse(
+            "<h1>Template engine not available</h1>", status_code=500
+        )
+    lang = _lang(request)
+    context.setdefault("request", request)
+    context.setdefault("lang", lang)
+    context.setdefault("_", lambda key, **fmt: _t(lang, key, **fmt))
+
+    toggle_lang = "zh" if lang == "en" else "en"
+    toggle_params = dict(request.query_params)
+    toggle_params["lang"] = toggle_lang
+    toggle_qs = urlencode(toggle_params)
+    toggle_url = request.url.path + ("?" + toggle_qs if toggle_qs else "")
+    context.setdefault("toggle_lang", toggle_lang)
+    context.setdefault("toggle_url", toggle_url)
+
+    template = _jinja_env.get_template(template_name)
+    return HTMLResponse(template.render(**context))
+
+
 def _render(
     request: Request, template_name: str, **context
 ) -> HTMLResponse:
-    """Render a Jinja2 template to an HTML response (backward-compat, calls _render_with_i18n)."""
     return _render_with_i18n(request, template_name, **context)
 
 
 # ── Auth helpers ─────────────────────────────────
 
 
-def _require_login(request: Request) -> Optional[str]:
-    """Check if user is logged in. Returns None or redirect."""
-    return request.session.get("admin_authenticated")
+def _get_user_id(request: Request) -> int | None:
+    return request.session.get("user_id")
+
+
+def _get_user_role(request: Request) -> str | None:
+    return request.session.get("role")
+
+
+async def _require_login(request: Request, db: AsyncSession) -> User | None:
+    """Return current User or None. Sets 'user' in request.state for downstream use."""
+    user_id = _get_user_id(request)
+    if user_id is None:
+        return None
+    user = await get_user_by_id(db, user_id)
+    if user is None or not user.is_active:
+        return None
+    request.state.user = user
+    return user
+
+
+async def _require_super_admin(request: Request, db: AsyncSession) -> User | None:
+    """Require super_admin role."""
+    user = await _require_login(request, db)
+    if user is None or user.role != "super_admin":
+        return None
+    return user
 
 
 def _login_redirect(lang: str = "zh"):
     return RedirectResponse(url=f"/admin/login?lang={lang}", status_code=302)
+
+
+def _client_ip(request: Request) -> str:
+    """Extract client IP from headers."""
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real = request.headers.get("X-Real-IP", "")
+    if real:
+        return real.strip()
+    return request.client.host if request.client else "unknown"
 
 
 # ── Auth routes ──────────────────────────────────
@@ -256,32 +379,66 @@ def _login_redirect(lang: str = "zh"):
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """Show the login form."""
     error = request.query_params.get("error", "")
-    lang = _lang(request)
-    if error:
-        error = "login_error"
     return _render(request, "login.html.j2", error=error if error else "")
 
 
 @router.post("/login")
 async def login_action(
     request: Request,
+    username: str = Form(default=""),
     password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Process login form submission."""
     lang = _lang(request)
-    if password == settings.admin_password:
-        request.session["admin_authenticated"] = True
-        request.session["lang"] = lang
-        return RedirectResponse(url=f"/admin/releases?lang={lang}", status_code=302)
+    ip = _client_ip(request)
 
+    if username:
+        user = await get_user_by_username(db, username)
+        if user and user.is_active and verify_password(password, user.password_hash):
+            request.session["user_id"] = user.id
+            request.session["role"] = user.role
+            request.session["lang"] = lang
+            await audit_repo.create_log(
+                db,
+                user_id=user.id,
+                username=user.username,
+                action="login",
+                ip_address=ip,
+            )
+            return RedirectResponse(url=f"/admin/releases?lang={lang}", status_code=302)
+        elif user and not user.is_active:
+            await audit_repo.create_log(
+                db,
+                username=username,
+                action="login_failed",
+                detail={"reason": "account_disabled"},
+                ip_address=ip,
+            )
+            return RedirectResponse(url=f"/admin/login?error=login_disabled&lang={lang}", status_code=302)
+
+    await audit_repo.create_log(
+        db,
+        username=username or "unknown",
+        action="login_failed",
+        detail={"reason": "bad_credentials"},
+        ip_address=ip,
+    )
     return RedirectResponse(url=f"/admin/login?error=login_error&lang={lang}", status_code=302)
 
 
 @router.get("/logout")
-async def logout(request: Request):
-    """Clear session and redirect to login."""
+async def logout(request: Request, db: AsyncSession = Depends(get_db)):
+    user_id = _get_user_id(request)
+    user = await get_user_by_id(db, user_id) if user_id else None
+    if user:
+        await audit_repo.create_log(
+            db,
+            user_id=user.id,
+            username=user.username,
+            action="logout",
+            ip_address=_client_ip(request),
+        )
     request.session.clear()
     lang = _lang(request)
     return RedirectResponse(url=f"/admin/login?lang={lang}", status_code=302)
@@ -292,7 +449,6 @@ async def logout(request: Request):
 
 @router.get("/", response_class=HTMLResponse)
 async def admin_index(request: Request):
-    """Redirect to releases list."""
     lang = _lang(request)
     return RedirectResponse(url=f"/admin/releases?lang={lang}", status_code=302)
 
@@ -306,11 +462,9 @@ async def release_list_page(
     page: int = Query(default=1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
-    """Show the paginated release list."""
-    if not _require_login(request):
+    if not await _require_login(request, db):
         return _login_redirect(_lang(request))
 
-    # Parse filter values
     active_filter: bool | None = None
     if is_active == "active":
         active_filter = True
@@ -343,9 +497,8 @@ async def release_list_page(
 
 
 @router.get("/releases/new", response_class=HTMLResponse)
-async def release_new_page(request: Request):
-    """Show the create release form."""
-    if not _require_login(request):
+async def release_new_page(request: Request, db: AsyncSession = Depends(get_db)):
+    if not await _require_login(request, db):
         return _login_redirect(_lang(request))
 
     return _render(
@@ -364,8 +517,7 @@ async def release_edit_page(
     release_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """Show the edit release form."""
-    if not _require_login(request):
+    if not await _require_login(request, db):
         return _login_redirect(_lang(request))
 
     release = await get_release_by_id(db, release_id)
@@ -399,8 +551,8 @@ async def release_create_action(
     grayscale_pct: str = Form(default=""),
     db: AsyncSession = Depends(get_db),
 ):
-    """Handle create release form submission."""
-    if not _require_login(request):
+    user = await _require_login(request, db)
+    if not user:
         return _login_redirect(_lang(request))
 
     try:
@@ -418,7 +570,7 @@ async def release_create_action(
         )
 
     gs = is_grayscale == "1"
-    await create_release(
+    release = await create_release(
         db=db,
         version=version,
         platform=platform if platform else None,
@@ -432,6 +584,16 @@ async def release_create_action(
         grayscale_pct=int(grayscale_pct) if gs and grayscale_pct else None,
         download_url=download_url if download_url else None,
         changelog=changelog if changelog else None,
+    )
+    await audit_repo.create_log(
+        db,
+        user_id=user.id,
+        username=user.username,
+        action="release_create",
+        target_type="release",
+        target_id=release.id,
+        detail={"version": version},
+        ip_address=_client_ip(request),
     )
     lang = _lang(request)
     return RedirectResponse(url=f"/admin/releases?created=1&lang={lang}", status_code=302)
@@ -455,8 +617,8 @@ async def release_update_action(
     grayscale_pct: str = Form(default=""),
     db: AsyncSession = Depends(get_db),
 ):
-    """Handle edit release form submission."""
-    if not _require_login(request):
+    user = await _require_login(request, db)
+    if not user:
         return _login_redirect(_lang(request))
 
     release = await get_release_by_id(db, release_id)
@@ -494,6 +656,16 @@ async def release_update_action(
         download_url=download_url if download_url else None,
         changelog=changelog if changelog else None,
     )
+    await audit_repo.create_log(
+        db,
+        user_id=user.id,
+        username=user.username,
+        action="release_update",
+        target_type="release",
+        target_id=release.id,
+        detail={"version": version},
+        ip_address=_client_ip(request),
+    )
     lang = _lang(request)
     return RedirectResponse(url=f"/admin/releases?updated=1&lang={lang}", status_code=302)
 
@@ -504,10 +676,228 @@ async def release_delete_action(
     release_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """Handle delete release form submission."""
-    if not _require_login(request):
+    user = await _require_login(request, db)
+    if not user:
         return _login_redirect(_lang(request))
 
+    release = await get_release_by_id(db, release_id)
+    version = release.version if release else str(release_id)
     await delete_release(db, release_id)
+    await audit_repo.create_log(
+        db,
+        user_id=user.id,
+        username=user.username,
+        action="release_delete",
+        target_type="release",
+        target_id=release_id,
+        detail={"version": version},
+        ip_address=_client_ip(request),
+    )
     lang = _lang(request)
     return RedirectResponse(url=f"/admin/releases?deleted=1&lang={lang}", status_code=302)
+
+
+# ── User management pages (super_admin only) ─────
+
+
+@router.get("/users", response_class=HTMLResponse)
+async def user_list_page(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await _require_super_admin(request, db):
+        return _login_redirect(_lang(request))
+
+    items, total = await list_users(db, page=page, page_size=20)
+    total_pages = max(1, (total + 19) // 20)
+
+    return _render(
+        request,
+        "users.html.j2",
+        users=items,
+        total=total,
+        page=page,
+        total_pages=total_pages,
+    )
+
+
+@router.get("/users/new", response_class=HTMLResponse)
+async def user_new_page(request: Request, db: AsyncSession = Depends(get_db)):
+    if not await _require_super_admin(request, db):
+        return _login_redirect(_lang(request))
+
+    return _render(request, "user-edit.html.j2", user=None, is_new=True)
+
+
+@router.get("/users/{user_id}/edit", response_class=HTMLResponse)
+async def user_edit_page(
+    request: Request,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    if not await _require_super_admin(request, db):
+        return _login_redirect(_lang(request))
+
+    u = await get_user_by_id(db, user_id)
+    if u is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return _render(request, "user-edit.html.j2", user=u, is_new=False)
+
+
+@router.post("/users/new", response_class=HTMLResponse)
+async def user_create_action(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(default="admin"),
+    display_name: str = Form(default=""),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user = await _require_super_admin(request, db)
+    if not current_user:
+        return _login_redirect(_lang(request))
+
+    # Check duplicate
+    existing = await get_user_by_username(db, username)
+    if existing:
+        lang = _lang(request)
+        return _render(
+            request,
+            "user-edit.html.j2",
+            user=None,
+            is_new=True,
+            error=_t(lang, "login_error"),
+        )
+
+    if role not in ("super_admin", "admin"):
+        role = "admin"
+
+    new_user = await create_user(
+        db,
+        username=username,
+        password=password,
+        role=role,
+        display_name=display_name if display_name else None,
+    )
+    await audit_repo.create_log(
+        db,
+        user_id=current_user.id,
+        username=current_user.username,
+        action="user_create",
+        target_type="user",
+        target_id=new_user.id,
+        detail={"username": username, "role": role},
+        ip_address=_client_ip(request),
+    )
+    lang = _lang(request)
+    return RedirectResponse(url=f"/admin/users?created=1&lang={lang}", status_code=302)
+
+
+@router.post("/users/{user_id}/edit", response_class=HTMLResponse)
+async def user_update_action(
+    request: Request,
+    user_id: int,
+    username: str = Form(default=""),
+    password: str = Form(default=""),
+    role: str = Form(default="admin"),
+    display_name: str = Form(default=""),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user = await _require_super_admin(request, db)
+    if not current_user:
+        return _login_redirect(_lang(request))
+
+    u = await get_user_by_id(db, user_id)
+    if u is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if role not in ("super_admin", "admin"):
+        role = "admin"
+
+    updates = {}
+    if username and username != u.username:
+        updates["username"] = username
+    if display_name is not None:
+        updates["display_name"] = display_name if display_name else None
+    if role:
+        updates["role"] = role
+    if password:
+        updates["password"] = password
+
+    await update_user(db, u, **updates)
+    await audit_repo.create_log(
+        db,
+        user_id=current_user.id,
+        username=current_user.username,
+        action="user_update",
+        target_type="user",
+        target_id=u.id,
+        detail={"updates": list(updates.keys())},
+        ip_address=_client_ip(request),
+    )
+    lang = _lang(request)
+    return RedirectResponse(url=f"/admin/users?updated=1&lang={lang}", status_code=302)
+
+
+@router.post("/users/{user_id}/delete")
+async def user_delete_action(
+    request: Request,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    current_user = await _require_super_admin(request, db)
+    if not current_user:
+        return _login_redirect(_lang(request))
+
+    if user_id == current_user.id:
+        lang = _lang(request)
+        return RedirectResponse(url=f"/admin/users?error=cannot_delete_self&lang={lang}", status_code=302)
+
+    u = await get_user_by_id(db, user_id)
+    uname = u.username if u else str(user_id)
+    await delete_user(db, user_id)
+    await audit_repo.create_log(
+        db,
+        user_id=current_user.id,
+        username=current_user.username,
+        action="user_delete",
+        target_type="user",
+        target_id=user_id,
+        detail={"username": uname},
+        ip_address=_client_ip(request),
+    )
+    lang = _lang(request)
+    return RedirectResponse(url=f"/admin/users?deleted=1&lang={lang}", status_code=302)
+
+
+# ── Audit log page (super_admin only) ────────────
+
+
+@router.get("/audit-logs", response_class=HTMLResponse)
+async def audit_log_page(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    action: str | None = Query(default=None),
+    username: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await _require_super_admin(request, db):
+        return _login_redirect(_lang(request))
+
+    items, total = await audit_repo.list_logs(
+        db, page=page, page_size=50, action=action, username=username
+    )
+    total_pages = max(1, (total + 49) // 50)
+
+    return _render(
+        request,
+        "audit-logs.html.j2",
+        logs=items,
+        total=total,
+        page=page,
+        total_pages=total_pages,
+        action=action or "",
+        username=username or "",
+    )

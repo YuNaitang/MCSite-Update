@@ -1,0 +1,67 @@
+{% extends "base.html.j2" %}
+{% block title %}
+    {% if is_new %}{{ _('new_user') }}{% else %}{{ _('edit_user') }} {{ user.username }}{% endif %} - {{ _('title') }}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{% if is_new %}{{ _('new_user') }}{% else %}{{ _('edit_user') }}{% endif %}</h1>
+    <a href="/admin/users?lang={{ lang }}" class="btn btn-outline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        {{ _('back_to_list') }}
+    </a>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="form-container">
+    {% if is_new %}
+    <form method="POST" action="/admin/users/new?lang={{ lang }}" class="release-form">
+    {% else %}
+    <form method="POST" action="/admin/users/{{ user.id }}/edit?lang={{ lang }}" class="release-form">
+    {% endif %}
+
+        <div class="form-group required">
+            <label for="f-username">{{ _('username') }}</label>
+            <input type="text" id="f-username" name="username"
+                class="form-input" placeholder="admin"
+                value="{{ user.username if user else '' }}"
+                required minlength="1" maxlength="64" />
+        </div>
+
+        <div class="form-group{% if is_new %} required{% endif %}">
+            <label for="f-password">{{ _('password') }}</label>
+            <input type="password" id="f-password" name="password"
+                class="form-input"
+                placeholder="{{ '********' if not is_new else '' }}"
+                {% if is_new %}required{% endif %}
+                minlength="1" maxlength="128" />
+            <span class="form-hint">{{ _('password_hint') if not is_new else _('user_password_hint_new') }}</span>
+        </div>
+
+        <div class="form-group">
+            <label for="f-display-name">{{ _('display_name') }}</label>
+            <input type="text" id="f-display-name" name="display_name"
+                class="form-input" placeholder="John"
+                value="{{ user.display_name if user and user.display_name else '' }}" />
+        </div>
+
+        <div class="form-group">
+            <label for="f-role">{{ _('role') }}</label>
+            <select id="f-role" name="role" class="form-select">
+                <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>{{ _('admin_role') }}</option>
+                <option value="super_admin" {% if user and user.role == 'super_admin' %}selected{% endif %}>{{ _('super_admin') }}</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                {% if is_new %}{{ _('create_user') }}{% else %}{{ _('save_changes') }}{% endif %}
+            </button>
+            <a href="/admin/users?lang={{ lang }}" class="btn btn-outline btn-lg">{{ _('cancel') }}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

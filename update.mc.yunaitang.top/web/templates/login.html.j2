@@ -8,10 +8,22 @@
         <p class="login-subtitle">{{ _('login_subtitle') }}</p>
 
         {% if error %}
-        <div class="alert alert-error">{{ _('login_error') }}</div>
+        <div class="alert alert-error">{{ _(error) }}</div>
         {% endif %}
 
         <form method="POST" action="/admin/login?lang={{ lang }}" class="login-form">
+            <div class="form-group">
+                <label for="username">{{ _('login_username') }}</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="form-input"
+                    placeholder="{{ _('login_username_placeholder') }}"
+                    required
+                    autofocus
+                />
+            </div>
             <div class="form-group">
                 <label for="password">{{ _('login_password') }}</label>
                 <input
@@ -21,7 +33,6 @@
                     class="form-input"
                     placeholder="{{ _('login_placeholder') }}"
                     required
-                    autofocus
                 />
             </div>
             <button type="submit" class="btn btn-primary btn-block">{{ _('login_button') }}</button>
