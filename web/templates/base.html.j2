@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MC 启动器更新管理{% endblock %}</title>
+    <link rel="stylesheet" href="/admin/static/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if request.session.get("admin_authenticated") %}
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a href="/admin/releases" class="nav-brand">🎮 MC 启动器更新管理</a>
+            <div class="nav-actions">
+                <span class="nav-user">管理员</span>
+                <a href="/admin/logout" class="nav-link">登出</a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>MC Launcher Update Server v0.1.0</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

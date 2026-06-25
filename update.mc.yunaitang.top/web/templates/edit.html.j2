@@ -1,0 +1,185 @@
+{% extends "base.html.j2" %}
+{% block title %}
+    {% if is_new %}新建发布{% else %}编辑发布 {{ release.version }}{% endif %} - MC 启动器更新管理
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{% if is_new %}📝 新建发布{% else %}✏️ 编辑发布{% endif %}</h1>
+    <a href="/admin/releases" class="btn btn-outline">← 返回列表</a>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="form-container">
+    {% if is_new %}
+    <form method="POST" action="/admin/releases/new" class="release-form">
+    {% else %}
+    <form method="POST" action="/admin/releases/{{ release.id }}/edit" class="release-form">
+    {% endif %}
+
+        {# Version #}
+        <div class="form-group required">
+            <label for="f-version">版本号</label>
+            <input
+                type="text" id="f-version" name="version"
+                class="form-input" placeholder="1.3.0"
+                value="{{ release.version if release else '' }}"
+                required pattern="^\d+\.\d+\.\d+"
+            />
+            <span class="form-hint">格式：X.Y.Z（如 1.0.0）</span>
+        </div>
+
+        <div class="form-row">
+            {# Platform #}
+            <div class="form-group">
+                <label for="f-platform">平台</label>
+                <select id="f-platform" name="platform" class="form-select">
+                    <option value="">全部平台</option>
+                    {% for p in platforms %}
+                    <option value="{{ p.value }}"
+                        {% if release and release.platform == p.value %}selected{% endif %}>
+                        {{ p.value }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-hint">留空 = 匹配所有平台</span>
+            </div>
+
+            {# Architecture #}
+            <div class="form-group">
+                <label for="f-arch">架构</label>
+                <select id="f-arch" name="arch" class="form-select">
+                    <option value="">全部架构</option>
+                    {% for a in archs %}
+                    <option value="{{ a.value }}"
+                        {% if release and release.arch == a.value %}selected{% endif %}>
+                        {{ a.value }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-hint">留空 = 匹配所有架构</span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            {# OS version range #}
+            <div class="form-group">
+                <label for="f-os-min">最低 OS 版本</label>
+                <input type="text" id="f-os-min" name="os_version_min"
+                    class="form-input" placeholder="8.0"
+                    value="{{ release.os_version_min if release and release.os_version_min else '' }}"
+                />
+                <span class="form-hint">留空 = 无下限</span>
+            </div>
+            <div class="form-group">
+                <label for="f-os-max">最高 OS 版本</label>
+                <input type="text" id="f-os-max" name="os_version_max"
+                    class="form-input" placeholder="14.99"
+                    value="{{ release.os_version_max if release and release.os_version_max else '' }}"
+                />
+                <span class="form-hint">留空 = 无上限</span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            {# Channel #}
+            <div class="form-group">
+                <label for="f-channel">渠道</label>
+                <input type="text" id="f-channel" name="channel"
+                    class="form-input" placeholder="official"
+                    value="{{ release.channel if release and release.channel else '' }}"
+                />
+                <span class="form-hint">留空 = 匹配所有渠道</span>
+            </div>
+
+            {# Build number #}
+            <div class="form-group">
+                <label for="f-build-number">构建号</label>
+                <input type="number" id="f-build-number" name="build_number"
+                    class="form-input" placeholder="105"
+                    value="{{ release.build_number if release and release.build_number else '' }}"
+                />
+                <span class="form-hint">仅参考，不参与版本比对</span>
+            </div>
+        </div>
+
+        {# Download URL #}
+        <div class="form-group">
+            <label for="f-download-url">下载地址</label>
+            <input type="url" id="f-download-url" name="download_url"
+                class="form-input" placeholder="https://example.com/download"
+                value="{{ release.download_url if release and release.download_url else '' }}"
+            />
+            <span class="form-hint">指向社群下载页面（QQ 群公告、论坛帖子等）</span>
+        </div>
+
+        {# Changelog #}
+        <div class="form-group">
+            <label for="f-changelog">更新日志</label>
+            <textarea id="f-changelog" name="changelog"
+                class="form-textarea" rows="5"
+                placeholder="## 1.3.0&#10;- 新增功能 A&#10;- 修复问题 B">{{ release.changelog if release and release.changelog else '' }}</textarea>
+            <span class="form-hint">支持 Markdown 格式</span>
+        </div>
+
+        <hr />
+
+        {# Toggles #}
+        <div class="form-row">
+            <div class="form-group">
+                <label class="toggle-label">
+                    <input type="checkbox" name="is_active" value="1"
+                        {% if not release or release.is_active %}checked{% endif %}
+                        class="toggle-checkbox"
+                    />
+                    <span class="toggle-switch"></span>
+                    启用发布
+                </label>
+                <span class="form-hint">停用后 app 端不会收到此版本的更新提醒</span>
+            </div>
+
+            <div class="form-group">
+                <label class="toggle-label">
+                    <input type="checkbox" name="is_grayscale" value="1" id="grayscale-toggle"
+                        {% if release and release.is_grayscale %}checked{% endif %}
+                        class="toggle-checkbox"
+                    />
+                    <span class="toggle-switch"></span>
+                    灰度发布
+                </label>
+            </div>
+        </div>
+
+        {# Grayscale percentage (shown/hidden by JS) #}
+        <div class="form-group" id="grayscale-pct-group" style="display: {% if release and release.is_grayscale %}block{% else %}none{% endif %};">
+            <label for="f-grayscale-pct">灰度比例</label>
+            <div class="range-group">
+                <input type="range" id="f-grayscale-pct" name="grayscale_pct"
+                    min="0" max="100"
+                    value="{{ release.grayscale_pct if release and release.grayscale_pct else 20 }}"
+                    class="range-input"
+                />
+                <span class="range-value" id="grayscale-pct-label">
+                    {{ release.grayscale_pct if release and release.grayscale_pct else 20 }}%
+                </span>
+            </div>
+            <span class="form-hint">仅有 {百分比}% 的用户会收到此灰度版本</span>
+        </div>
+
+        {# Submit #}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                {% if is_new %}创建发布{% else %}保存更改{% endif %}
+            </button>
+            <a href="/admin/releases" class="btn btn-outline btn-lg">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/admin/static/app.js"></script>
+{% endblock %}

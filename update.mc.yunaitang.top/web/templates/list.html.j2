@@ -1,0 +1,144 @@
+{% extends "base.html.j2" %}
+{% block title %}发布列表 - MC 启动器更新管理{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📋 发布管理</h1>
+    <a href="/admin/releases/new" class="btn btn-primary">＋ 新建发布</a>
+</div>
+
+{% if request.query_params.get("created") %}
+<div class="alert alert-success">✅ 发布已创建</div>
+{% endif %}
+{% if request.query_params.get("updated") %}
+<div class="alert alert-success">✅ 发布已更新</div>
+{% endif %}
+{% if request.query_params.get("deleted") %}
+<div class="alert alert-success">🗑 发布已删除</div>
+{% endif %}
+
+{# Filters #}
+<form class="filter-bar" method="GET" action="/admin/releases">
+    <div class="filter-row">
+        <div class="filter-item">
+            <label for="f-platform">平台</label>
+            <select id="f-platform" name="platform" class="form-select">
+                <option value="">全部平台</option>
+                {% for p in platforms %}
+                <option value="{{ p.value }}" {% if platform == p.value %}selected{% endif %}>{{ p.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="f-channel">渠道</label>
+            <input type="text" id="f-channel" name="channel" value="{{ channel }}" class="form-input" placeholder="渠道名" />
+        </div>
+        <div class="filter-item">
+            <label for="f-status">状态</label>
+            <select id="f-status" name="is_active" class="form-select">
+                <option value="">全部</option>
+                <option value="active" {% if is_active == "active" %}selected{% endif %}>活跃</option>
+                <option value="inactive" {% if is_active == "inactive" %}selected{% endif %}>停用</option>
+            </select>
+        </div>
+        <div class="filter-item filter-actions">
+            <button type="submit" class="btn btn-secondary">筛选</button>
+            <a href="/admin/releases" class="btn btn-link">清除</a>
+        </div>
+    </div>
+</form>
+
+{# Table #}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>版本</th>
+                <th>平台</th>
+                <th>架构</th>
+                <th>OS 范围</th>
+                <th>渠道</th>
+                <th>构建号</th>
+                <th>状态</th>
+                <th>灰度</th>
+                <th>下载地址</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if releases %}
+            {% for r in releases %}
+            <tr class="{% if not r.is_active %}row-inactive{% endif %}">
+                <td>{{ r.id }}</td>
+                <td class="version-cell">{{ r.version }}</td>
+                <td>{{ r.platform or "-" }}</td>
+                <td>{{ r.arch or "-" }}</td>
+                <td>
+                    {% if r.os_version_min or r.os_version_max %}
+                        {{ r.os_version_min or "不限" }} ~ {{ r.os_version_max or "不限" }}
+                    {% else %}-{% endif %}
+                </td>
+                <td>{{ r.channel or "-" }}</td>
+                <td>{{ r.build_number or "-" }}</td>
+                <td>
+                    {% if r.is_active %}
+                    <span class="badge badge-active">活跃</span>
+                    {% else %}
+                    <span class="badge badge-inactive">停用</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.is_grayscale %}
+                    <span class="badge badge-grayscale">{{ r.grayscale_pct }}%</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td class="url-cell">
+                    {% if r.download_url %}
+                    <a href="{{ r.download_url }}" target="_blank" class="external-link">🔗</a>
+                    {% else %}-{% endif %}
+                </td>
+                <td class="actions-cell">
+                    <a href="/admin/releases/{{ r.id }}/edit" class="btn btn-sm btn-outline">编辑</a>
+                    <form method="POST" action="/admin/releases/{{ r.id }}/delete"
+                          class="inline-form"
+                          onsubmit="return confirm('确定要删除版本 {{ r.version }} 吗？此操作不可撤销。')">
+                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="11" class="empty-row">暂无发布记录。点击右上角「新建发布」创建第一个发布。</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{# Pagination #}
+{% if total_pages > 1 %}
+<div class="pagination">
+    <span class="page-info">{{ total }} 条记录，第 {{ page }}/{{ total_pages }} 页</span>
+    <div class="page-links">
+        {% if page > 1 %}
+        <a href="/admin/releases?page={{ page - 1 }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}" class="btn btn-sm btn-outline">上一页</a>
+        {% endif %}
+
+        {% set start = [page - 2, 1] | max %}
+        {% set end = [page + 2, total_pages] | min %}
+        {% for p in range(start, end + 1) %}
+        <a href="/admin/releases?page={{ p }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}"
+           class="btn btn-sm {% if p == page %}btn-primary{% else %}btn-outline{% endif %}">
+            {{ p }}
+        </a>
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="/admin/releases?page={{ page + 1 }}&platform={{ platform }}&channel={{ channel }}&is_active={{ is_active }}" class="btn btn-sm btn-outline">下一页</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
