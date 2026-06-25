@@ -4,7 +4,7 @@
 
 ## Base URL
 
-生产环境: `https://update.yourserver.com/api/v1`
+生产环境: `https://update.mc.yunaitang.top/api/v1`
 
 ---
 
@@ -30,7 +30,7 @@ Content-Type: `application/json`
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `current_version` | string | ✅ | 当前 App 版本号（Semantic Versioning），如 `"1.0.0"` |
+| `current_version` | string | ✅ | 当前 App 版本号（Semantic Versioning），如 `"1.0.0"`、`"2.0.0-beta"` |
 | `platform` | string | ✅ | 平台：`android`、`ios`、`windows`、`linux`、`macos` |
 | `arch` | string | ✅ | CPU 架构：`arm64`、`x86_64`、`armv7`、`armv8a`、`x86` |
 | `os_version` | string | ✅ | 操作系统版本，如 `"14.0"`、`"26"`、`"10.0.22621"` |
@@ -74,7 +74,7 @@ Content-Type: `application/json`
 |------|------|------|
 | `has_update` | boolean | 是否有可用更新 |
 | `current_version` | string | 回显你发送的版本号 |
-| `latest_version` | string\|null | 最新可用版本号（Semantic Versioning） |
+| `latest_version` | string\|null | 最新可用版本号（Semantic Versioning，支持 pre-release 格式如 `"2.0.0-beta.1"`） |
 | `download_url` | string\|null | 下载页面链接（指向社群/QQ 群，不是直接的文件下载） |
 | `changelog` | string\|null | 更新日志（Markdown 格式） |
 | `build_number` | integer\|null | 最新版本的构建号 |
@@ -150,7 +150,7 @@ func checkForUpdate() async throws -> UpdateResult {
 1. **始终传递 `device_id`**：灰度（灰度）更新按百分比分发给用户。不传 `device_id` 意味着你永远收不到灰度更新包。
 2. **不要过度缓存**：服务端响应可能随运营操作而变化。建议缓存几小时，同时允许用户手动刷新检查。
 3. **`download_url` 指向外部**：此服务器不托管任何文件。URL 通常指向社群页面（QQ 群公告、论坛帖子等），用户需自行前往下载 APK/IPA/安装包。
-4. **版本比对基于语义化版本**：`1.0.0 < 1.1.0 < 2.0.0`，不依赖 `build_number`。
+4. **版本比对基于语义化版本**：`1.0.0 < 1.1.0 < 2.0.0`，支持 pre-release 标识如 `1.0.0-alpha < 1.0.0-beta < 1.0.0`。不依赖 `build_number`。
 5. **`os_version` 格式**：发送设备原始系统版本字符串即可（如 Android `"14"`、iOS `"17.4"`、Windows `"10.0.22621"`）。服务端支持多段版本号比对。
 
 ---
@@ -164,7 +164,7 @@ func checkForUpdate() async throws -> UpdateResult {
 ```json
 {
     "status": "ok",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "timestamp": "2026-06-25T12:00:00Z"
 }
 ```

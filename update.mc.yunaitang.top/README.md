@@ -2,6 +2,12 @@
 
 MC 启动器的版本更新检查服务，提供 Web 管理界面和 REST API。
 
+## 特性
+
+- **版本更新检查 API** — 支持语义化版本（含 pre-release 如 `1.0.0-beta`）+ 灰度哈希分流
+- **Web 管理面板** — Catppuccin Mocha 深色主题，中英文切换，零前端构建
+- **CLI 管理** — 命令行创建/编辑/删除发布、控制灰度比例
+
 ## 技术栈
 
 - **Python 3.12+** / **FastAPI** / **SQLite** / **uv**
@@ -16,16 +22,16 @@ uv sync
 # 初始化数据库
 uv run alembic upgrade head
 
-# 启动服务
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+# 启动服务（默认端口 3100）
+uv run uvicorn app.main:app --host 127.0.0.1 --port 3100
 ```
 ```
 
 启动后：
-- **Web 管理界面**: http://localhost:8000/admin （密码在 `.env` 中配置，默认 `change-me`）
-- **API 文档 (Swagger)**: http://localhost:8000/docs
-- **健康检查**: GET http://localhost:8000/api/v1/health
-- **版本检查 API**: POST http://localhost:8000/api/v1/check-update
+- **Web 管理界面**: http://localhost:3100/admin （密码在 `.env` 中配置，默认 `change-me`）
+- **API 文档 (Swagger)**: http://localhost:3100/docs
+- **健康检查**: GET http://localhost:3100/api/v1/health
+- **版本检查 API**: POST http://localhost:3100/api/v1/check-update
 
 ## 默认密码
 
@@ -92,7 +98,7 @@ uv run python -m admin.cli delete-release 1
 ### 简单启动
 
 ```bash
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn app.main:app --host 0.0.0.0 --port 3100
 ```
 
 ### 生产环境
@@ -102,13 +108,13 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```nginx
 server {
     listen 80;
-    server_name update.example.com;
+    server_name update.mc.yunaitang.top;
 
     location /api/v1/check-update {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:3100;
     }
     location /api/v1/health {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:3100;
     }
     # Management UI: restrict to internal IPs
     location /admin {
@@ -116,7 +122,7 @@ server {
         allow 172.16.0.0/12;
         allow 192.168.0.0/16;
         deny all;
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:3100;
     }
 }
 ```
@@ -130,7 +136,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY . .
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3100"]
 ```
 
 ## 数据库
