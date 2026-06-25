@@ -1,0 +1,39 @@
+[Unit]
+Description=MCSite Update — MC Launcher Version Check Service
+Documentation=https://update.mc.yunaitang.top/docs
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/MCSite-Update
+Environment=PATH=/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=/var/www/MCSite-Update/.env
+ExecStart=/root/.cargo/bin/uv run uvicorn app.main:app --host 127.0.0.1 --port 3100
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mcsite-update
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/MCSite-Update/data
+ReadOnlyPaths=/var/www/MCSite-Update
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictRealtime=true
+MemoryDenyWriteExecute=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
