@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -13,6 +13,7 @@ from app.repositories.release_repo import (
     list_releases,
     update_release,
 )
+from app.repositories.user_repo import get_user_by_id
 from app.schemas.request import (
     CheckUpdateRequest,
     CreateReleaseRequest,
@@ -32,6 +33,21 @@ from app.services.version_check import find_latest_release
 router = APIRouter(prefix="/api/v1", tags=["api"])
 
 
+# ── Auth dependency for admin API endpoints ─────────
+
+
+async def _require_admin(request: Request, db: AsyncSession = Depends(get_db)):
+    """Require a valid admin session for API admin endpoints."""
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    user = await get_user_by_id(db, user_id)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    request.state.user = user
+    return user
+
+
 # ──────────────────────────────────────────────
 # Health check
 # ──────────────────────────────────────────────
@@ -42,7 +58,7 @@ async def health_check():
     """Simple health check endpoint."""
     return HealthResponse(
         status="ok",
-        version="0.1.0",
+        version="0.3.0",
         timestamp=datetime.now(timezone.utc),
     )
 
@@ -103,6 +119,7 @@ async def check_update(
 
 @router.get("/admin/releases", response_model=PaginatedReleases)
 async def admin_list_releases(
+    request: Request,
     platform: str | None = Query(default=None, description="Filter by platform"),
     channel: str | None = Query(default=None, description="Filter by channel"),
     is_active: bool | None = Query(default=None, description="Filter by active status"),
@@ -110,6 +127,7 @@ async def admin_list_releases(
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """List all releases with optional filters and pagination."""
     items, total = await list_releases(
@@ -133,6 +151,7 @@ async def admin_list_releases(
 async def admin_get_release(
     release_id: int,
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """Get a single release by ID."""
     release = await get_release_by_id(db, release_id)
@@ -145,6 +164,7 @@ async def admin_get_release(
 async def admin_create_release(
     body: CreateReleaseRequest,
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """Create a new release."""
     release = await create_release(
@@ -170,6 +190,7 @@ async def admin_update_release(
     release_id: int,
     body: UpdateReleaseRequest,
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """Update an existing release. Only provided fields are updated."""
     release = await get_release_by_id(db, release_id)
@@ -192,6 +213,7 @@ async def admin_update_release(
 async def admin_delete_release(
     release_id: int,
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """Delete a release."""
     deleted = await delete_release(db, release_id)
@@ -204,6 +226,7 @@ async def admin_toggle_active(
     release_id: int,
     body: ToggleActiveRequest,
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """Toggle a release's active status."""
     release = await get_release_by_id(db, release_id)
@@ -219,6 +242,7 @@ async def admin_set_grayscale(
     release_id: int,
     body: GrayscaleRequest,
     db: AsyncSession = Depends(get_db),
+    _admin=Depends(_require_admin),
 ):
     """Set grayscale rollout for a release."""
     release = await get_release_by_id(db, release_id)

@@ -22,6 +22,7 @@
     {% else %}
     <form method="POST" action="/admin/releases/{{ release.id }}/edit?lang={{ lang }}" class="release-form">
     {% endif %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         {# Version #}
         <div class="form-group required">

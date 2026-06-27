@@ -3,8 +3,9 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -30,15 +31,17 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="MC Launcher Update Server",
     description="Version update check server for MC Launcher",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
-# CORS — allow all origins for self-hosted scenario
+# CORS — restrict origins for admin API, allow all for public check-update
+# The public check-update endpoint does not use cookies/credentials.
+# Admin endpoints are authenticated via session cookie from the same origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -49,7 +52,20 @@ app.add_middleware(
     secret_key=settings.session_secret,
     session_cookie="mc_admin_session",
     max_age=86400,  # 24 hours
+    https_only=True,
+    same_site="lax",
 )
+
+
+# Global exception handler — prevent stack trace leakage
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 # API routes
 app.include_router(api_router)

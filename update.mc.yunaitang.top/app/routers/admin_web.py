@@ -2,6 +2,8 @@
 
 import json
 import os
+import secrets
+import time
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -318,6 +320,10 @@ def _render_with_i18n(
     context.setdefault("toggle_lang", toggle_lang)
     context.setdefault("toggle_url", toggle_url)
 
+    # CSRF token for forms
+    csrf_token = _csrf_token(request)
+    context.setdefault("csrf_token", csrf_token)
+
     template = _jinja_env.get_template(template_name)
     return HTMLResponse(template.render(**context))
 
@@ -374,6 +380,50 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+# ── CSRF protection ──────────────────────────────
+
+
+def _csrf_token(request: Request) -> str:
+    """Get or generate a CSRF token for the current session."""
+    token = request.session.get("csrf_token")
+    if not token:
+        token = secrets.token_hex(32)
+        request.session["csrf_token"] = token
+    return token
+
+
+def _validate_csrf(request: Request, form_csrf_token: str = ""):
+    """Validate CSRF token from form data against session."""
+    token = request.session.get("csrf_token")
+    if not token or not form_csrf_token:
+        raise HTTPException(status_code=403, detail="CSRF validation failed")
+    if not secrets.compare_digest(token, form_csrf_token):
+        raise HTTPException(status_code=403, detail="CSRF validation failed")
+
+
+# ── Login rate limiting ──────────────────────────
+
+
+_LOGIN_ATTEMPTS: dict[str, list[float]] = {}
+
+
+def _check_login_rate_limit(ip: str):
+    """Enforce rate limiting on login attempts: max 10 per 60 seconds per IP."""
+    now = time.time()
+    attempts = _LOGIN_ATTEMPTS.get(ip, [])
+    # Prune old entries
+    attempts = [t for t in attempts if now - t < 60]
+    _LOGIN_ATTEMPTS[ip] = attempts
+    if len(attempts) >= 10:
+        raise HTTPException(status_code=429, detail="Too many login attempts. Please try again later.")
+
+
+def _record_login_attempt(ip: str):
+    """Record a login attempt for rate limiting."""
+    now = time.time()
+    _LOGIN_ATTEMPTS.setdefault(ip, []).append(now)
+
+
 # ── Auth routes ──────────────────────────────────
 
 
@@ -394,11 +444,17 @@ async def login_action(
     ip = _client_ip(request)
 
     if username:
+        # Rate limiting
+        _check_login_rate_limit(ip)
+        _record_login_attempt(ip)
+
         user = await get_user_by_username(db, username)
         if user and user.is_active and verify_password(password, user.password_hash):
             request.session["user_id"] = user.id
             request.session["role"] = user.role
             request.session["lang"] = lang
+            # Generate CSRF token for this session
+            _csrf_token(request)
             await audit_repo.create_log(
                 db,
                 user_id=user.id,
@@ -537,6 +593,7 @@ async def release_edit_page(
 @router.post("/releases/new", response_class=HTMLResponse)
 async def release_create_action(
     request: Request,
+    csrf_token: str = Form(default=""),
     version: str = Form(...),
     platform: str = Form(default=""),
     arch: str = Form(default=""),
@@ -556,6 +613,11 @@ async def release_create_action(
         return _login_redirect(_lang(request))
 
     try:
+        _validate_csrf(request, csrf_token)
+    except HTTPException:
+        raise
+
+    try:
         parse_semver(version)
     except ValueError:
         lang = _lang(request)
@@ -570,6 +632,21 @@ async def release_create_action(
         )
 
     gs = is_grayscale == "1"
+    try:
+        build_num = int(build_number) if build_number else None
+        gs_pct = int(grayscale_pct) if gs and grayscale_pct else None
+    except ValueError:
+        lang = _lang(request)
+        return _render(
+            request,
+            "edit.html.j2",
+            release=None,
+            platforms=Platform,
+            archs=Architecture,
+            is_new=True,
+            error="build_number and grayscale_pct must be numeric",
+        )
+
     release = await create_release(
         db=db,
         version=version,
@@ -578,10 +655,10 @@ async def release_create_action(
         os_version_min=os_version_min if os_version_min else None,
         os_version_max=os_version_max if os_version_max else None,
         channel=channel if channel else None,
-        build_number=int(build_number) if build_number else None,
+        build_number=build_num,
         is_active=is_active == "1",
         is_grayscale=gs,
-        grayscale_pct=int(grayscale_pct) if gs and grayscale_pct else None,
+        grayscale_pct=gs_pct,
         download_url=download_url if download_url else None,
         changelog=changelog if changelog else None,
     )
@@ -603,6 +680,7 @@ async def release_create_action(
 async def release_update_action(
     request: Request,
     release_id: int,
+    csrf_token: str = Form(default=""),
     version: str = Form(...),
     platform: str = Form(default=""),
     arch: str = Form(default=""),
@@ -626,6 +704,11 @@ async def release_update_action(
         raise HTTPException(status_code=404, detail="Release not found")
 
     try:
+        _validate_csrf(request, csrf_token)
+    except HTTPException:
+        raise
+
+    try:
         parse_semver(version)
     except ValueError:
         lang = _lang(request)
@@ -640,6 +723,21 @@ async def release_update_action(
         )
 
     gs = is_grayscale == "1"
+    try:
+        build_num = int(build_number) if build_number else None
+        gs_pct = int(grayscale_pct) if gs and grayscale_pct else None
+    except ValueError:
+        lang = _lang(request)
+        return _render(
+            request,
+            "edit.html.j2",
+            release=release,
+            platforms=Platform,
+            archs=Architecture,
+            is_new=False,
+            error="build_number and grayscale_pct must be numeric",
+        )
+
     await update_release(
         db,
         release,
@@ -649,10 +747,10 @@ async def release_update_action(
         os_version_min=os_version_min if os_version_min else None,
         os_version_max=os_version_max if os_version_max else None,
         channel=channel if channel else None,
-        build_number=int(build_number) if build_number else None,
+        build_number=build_num,
         is_active=is_active == "1",
         is_grayscale=gs,
-        grayscale_pct=int(grayscale_pct) if gs and grayscale_pct else None,
+        grayscale_pct=gs_pct,
         download_url=download_url if download_url else None,
         changelog=changelog if changelog else None,
     )
@@ -674,11 +772,17 @@ async def release_update_action(
 async def release_delete_action(
     request: Request,
     release_id: int,
+    csrf_token: str = Form(default=""),
     db: AsyncSession = Depends(get_db),
 ):
     user = await _require_login(request, db)
     if not user:
         return _login_redirect(_lang(request))
+
+    try:
+        _validate_csrf(request, csrf_token)
+    except HTTPException:
+        raise
 
     release = await get_release_by_id(db, release_id)
     version = release.version if release else str(release_id)
@@ -749,6 +853,7 @@ async def user_edit_page(
 @router.post("/users/new", response_class=HTMLResponse)
 async def user_create_action(
     request: Request,
+    csrf_token: str = Form(default=""),
     username: str = Form(...),
     password: str = Form(...),
     role: str = Form(default="admin"),
@@ -758,6 +863,21 @@ async def user_create_action(
     current_user = await _require_super_admin(request, db)
     if not current_user:
         return _login_redirect(_lang(request))
+
+    try:
+        _validate_csrf(request, csrf_token)
+    except HTTPException:
+        raise
+
+    if len(password) < 8:
+        lang = _lang(request)
+        return _render(
+            request,
+            "user-edit.html.j2",
+            user=None,
+            is_new=True,
+            error="Password must be at least 8 characters",
+        )
 
     # Check duplicate
     existing = await get_user_by_username(db, username)
@@ -799,6 +919,7 @@ async def user_create_action(
 async def user_update_action(
     request: Request,
     user_id: int,
+    csrf_token: str = Form(default=""),
     username: str = Form(default=""),
     password: str = Form(default=""),
     role: str = Form(default="admin"),
@@ -808,6 +929,11 @@ async def user_update_action(
     current_user = await _require_super_admin(request, db)
     if not current_user:
         return _login_redirect(_lang(request))
+
+    try:
+        _validate_csrf(request, csrf_token)
+    except HTTPException:
+        raise
 
     u = await get_user_by_id(db, user_id)
     if u is None:
@@ -824,6 +950,15 @@ async def user_update_action(
     if role:
         updates["role"] = role
     if password:
+        if len(password) < 8:
+            lang = _lang(request)
+            return _render(
+                request,
+                "user-edit.html.j2",
+                user=u,
+                is_new=False,
+                error="Password must be at least 8 characters",
+            )
         updates["password"] = password
 
     await update_user(db, u, **updates)
@@ -845,11 +980,17 @@ async def user_update_action(
 async def user_delete_action(
     request: Request,
     user_id: int,
+    csrf_token: str = Form(default=""),
     db: AsyncSession = Depends(get_db),
 ):
     current_user = await _require_super_admin(request, db)
     if not current_user:
         return _login_redirect(_lang(request))
+
+    try:
+        _validate_csrf(request, csrf_token)
+    except HTTPException:
+        raise
 
     if user_id == current_user.id:
         lang = _lang(request)

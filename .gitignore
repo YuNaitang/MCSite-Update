@@ -11,6 +11,7 @@ venv/
 
 # Environment
 .env
+/mc.yunaitang.top/config.php
 
 # Database
 data/*.db
