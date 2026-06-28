@@ -18,12 +18,18 @@ class Upload
             Response::error('只能上传 jpg/png/gif/webp 图片', 400);
         }
 
-        // Server-side MIME verification
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $realMime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-        if (!in_array($realMime, self::$allowedTypes, true)) {
-            Response::error('文件类型不合法', 400);
+        // Server-side MIME verification (graceful fallback if finfo not available)
+        try {
+            if (function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $realMime = finfo_file($finfo, $file['tmp_name']);
+                $finfo = null; // implicit close in PHP 8.4+
+                if (!in_array($realMime, self::$allowedTypes, true)) {
+                    Response::error('文件类型不合法', 400);
+                }
+            }
+        } catch (Throwable $e) {
+            // finfo failed, skip server-side MIME check (fallback to client type)
         }
 
         if ($file['size'] > self::$maxSize) {
