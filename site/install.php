@@ -323,6 +323,20 @@ SQL;
                     ('player_chart', " . $pdo->quote('24h在线统计') . ", 1, '$now', '$now')");
                 $pdo->exec("INSERT INTO server_configs (server_name, host, port, protocol, created_at, updated_at) VALUES
                     ('My Server', '127.0.0.1', 25565, 'java', '$now', '$now')");
+                // 标记现有迁移为已执行（避免新装也有待迁移显示）
+                $pdo->exec("CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version VARCHAR(20) NOT NULL,
+                    executed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (version)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                foreach (glob(__DIR__ . '/migrations/*.sql') as $mf) {
+                    $ver = basename($mf, '.sql');
+                    if ($ver === '.gitkeep') continue;
+                    $cnt = $pdo->query("SELECT COUNT(*) FROM schema_migrations WHERE version = " . $pdo->quote($ver))->fetchColumn();
+                    if (!$cnt) {
+                        $pdo->exec("INSERT INTO schema_migrations (version, executed_at) VALUES (" . $pdo->quote($ver) . ", '$now')");
+                    }
+                }
                 $_SESSION['install_step_ok'] = 3;
                 header('Location: ' . strtok($_SERVER['REQUEST_URI'] ?? 'install.php', '?') . '?s=3');
                 exit;

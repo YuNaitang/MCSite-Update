@@ -60,22 +60,31 @@ class Migration
                 continue;
             }
 
-            try {
-                $statements = array_filter(
-                    array_map('trim', explode(';', $sql)),
-                    fn($s) => $s !== ''
-                );
-                foreach ($statements as $stmt) {
+            $hadError = false;
+            $errors = [];
+            $statements = array_filter(
+                array_map('trim', explode(';', $sql)),
+                fn($s) => $s !== ''
+            );
+            foreach ($statements as $stmt) {
+                try {
                     DB::query($stmt);
+                } catch (\Throwable $e) {
+                    $hadError = true;
+                    $errors[] = $e->getMessage();
                 }
-                DB::query(
-                    "INSERT INTO `" . self::$table . "` (version, executed_at) VALUES (?, NOW())",
-                    [$version]
-                );
+            }
+
+            // 即使部分语句失败也标记已执行（幂等），避免重复尝试
+            DB::query(
+                "INSERT INTO `" . self::$table . "` (version, executed_at) VALUES (?, NOW())",
+                [$version]
+            );
+
+            if ($hadError) {
+                $results[] = ['version' => $version, 'status' => 'warning', 'message' => implode('; ', $errors)];
+            } else {
                 $results[] = ['version' => $version, 'status' => 'ok', 'message' => ''];
-            } catch (\Throwable $e) {
-                $results[] = ['version' => $version, 'status' => 'error', 'message' => $e->getMessage()];
-                break;
             }
         }
 
