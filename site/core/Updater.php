@@ -9,7 +9,24 @@ class Updater
 {
     const REPO   = 'YuNaitang/MCSite-Update';
     const BRANCH = 'master';
-    const ARCHIVE_URL = 'https://github.com/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip';
+
+    private static function archiveUrl(): string
+    {
+        $mirror = self::getMirrorUrl();
+        if ($mirror) {
+            return rtrim($mirror, '/') . '/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip';
+        }
+        return 'https://github.com/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip';
+    }
+
+    private static function rawUrl(string $path): string
+    {
+        $mirror = self::getMirrorUrl();
+        if ($mirror) {
+            return rtrim($mirror, '/') . '/' . self::REPO . '/' . self::BRANCH . '/' . ltrim($path, '/');
+        }
+        return 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/' . ltrim($path, '/');
+    }
 
     private static string $cacheDir  = '';
     private static string $backupDir = '';
@@ -49,7 +66,7 @@ class Updater
      */
     static function getChangelog(): string
     {
-        $url = 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/CHANGELOG.md';
+        $url = self::rawUrl('CHANGELOG.md');
 
         $ctx = stream_context_create([
             'http'  => ['timeout' => 8, 'header' => "User-Agent: Beacon-Updater/1.0\r\n"],
@@ -62,7 +79,7 @@ class Updater
         }
 
         // 降级：从 README.md 截取更新部分
-        $readmeUrl = 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/README.md';
+        $readmeUrl = self::rawUrl('README.md');
         $body = @file_get_contents($readmeUrl, false, $ctx);
         if ($body !== false) {
             // 尝试提取 ## 更新日志 之后的内容
@@ -80,7 +97,7 @@ class Updater
      */
     static function check(): array
     {
-        $remoteUrl = 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/site/core/Version.php';
+        $remoteUrl = self::rawUrl('site/core/Version.php');
 
         $ctx = stream_context_create([
             'http'  => ['timeout' => 10, 'header' => "User-Agent: Beacon-Updater/1.0\r\n"],
@@ -113,7 +130,7 @@ class Updater
             'current'          => $localVersion,
             'latest_version'   => $remoteVersion,
             'changelog'        => $changelog,
-            'download_url'     => 'https://github.com/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip',
+            'download_url'     => self::archiveUrl(),
             'released_at'      => '',
             'min_php'          => '8.1',
             'file_hash'        => '',
@@ -163,7 +180,7 @@ class Updater
             'current'          => Version::CURRENT,
             'latest_version'   => substr($latestSha, 0, 7),
             'changelog'        => $hasUpdate ? $message : '',
-            'download_url'     => 'https://github.com/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip',
+            'download_url'     => self::archiveUrl(),
             'released_at'      => $date,
             'min_php'          => '8.1',
             'file_hash'        => '',
@@ -176,6 +193,7 @@ class Updater
 
     /**
      * 创建当前版本的备份（仅源码，排除缓存和上传文件）
+     * 注意：量大时可能超时，调用前建议 set_time_limit(0)
      */
     static function backup(): string
     {
@@ -185,7 +203,7 @@ class Updater
 
         $zip = new ZipArchive();
         if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException('无法创建备份文件');
+            throw new \RuntimeException('无法创建备份文件，请检查 ' . self::$backupDir . ' 目录权限');
         }
 
         $excludes = array_merge(self::$protectedPaths, ['.git', '.cursor', 'node_modules']);
@@ -233,17 +251,10 @@ class Updater
         $tmpFile = self::$cacheDir . '/update-' . time() . '.zip';
 
         // 优先尝试直连 GitHub，若失败且有镜像则用镜像
-        $urls = [self::ARCHIVE_URL];
+        $urls = [self::archiveUrl()];
         $mirrorUrl = self::getMirrorUrl();
-        if ($mirrorUrl) {
-            // 如果镜像地址没有 /repos/ 路径，说明是简单代理，直接拼接
-            $archiveUrl = rtrim($mirrorUrl, '/');
-            if (strpos($archiveUrl, 'api.github.com') === false && strpos($archiveUrl, 'github.com') === false) {
-                // 镜像代理模式：https://mirror/ + 原始 archive URL
-                $urls[] = $archiveUrl . '/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip';
-            } else {
-                $urls[] = $archiveUrl;
-            }
+        if ($mirrorUrl && $urls[0] !== $mirrorUrl) {
+            $urls[] = $mirrorUrl;
         }
 
         $success = false;
