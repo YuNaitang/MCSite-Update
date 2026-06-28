@@ -56,35 +56,30 @@
     <canvas class="hero-particles" id="hero-particles"></canvas>
     <div class="hero-bg"></div>
     <div class="container hero-content">
-      <div class="hero-title-wrap">
-        <h1 class="hero-title" id="hero-title">欢迎来到服务器</h1>
-        <p class="hero-subtitle" id="hero-subtitle"></p>
+      <h1 class="hero-title" id="hero-title">欢迎来到服务器</h1>
+      <div class="hero-motd-wrap">
+        <div class="hero-motd" id="hero-motd">&nbsp;</div>
       </div>
-      <div class="hero-status-bar">
-        <div class="hero-motd-wrap">
-          <div class="hero-motd" id="hero-motd">&nbsp;</div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value" id="hero-online">-</span>
+          <span class="hero-stat-label">在线玩家</span>
         </div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <span class="hero-stat-value" id="hero-online">-</span>
-            <span class="hero-stat-label">在线玩家</span>
-          </div>
-          <div class="hero-stat-divider"></div>
-          <div class="hero-stat">
-            <span class="hero-stat-value" id="hero-max">-</span>
-            <span class="hero-stat-label">最大人数</span>
-          </div>
-          <div class="hero-stat-divider"></div>
-          <div class="hero-stat">
-            <span class="hero-stat-value" id="hero-status-dot"><span class="status-dot"></span></span>
-            <span class="hero-stat-label" id="hero-status-text">检测中</span>
-          </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-value" id="hero-max">-</span>
+          <span class="hero-stat-label">最大人数</span>
         </div>
-        <div class="hero-address">
-          <span class="address-label">服务器地址</span>
-          <code class="address-value" id="server-address">加载中...</code>
-          <button class="copy-btn" id="copy-btn" title="复制地址"><i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>复制</button>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-value" id="hero-status-dot"><span class="status-dot"></span></span>
+          <span class="hero-stat-label" id="hero-status-text">检测中</span>
         </div>
+      </div>
+      <div class="hero-address">
+        <span class="address-label">服务器地址</span>
+        <code class="address-value" id="server-address">加载中...</code>
+        <button class="copy-btn" id="copy-btn" title="复制地址"><i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>复制</button>
       </div>
     </div>
     <div class="hero-scroll" id="hero-scroll">

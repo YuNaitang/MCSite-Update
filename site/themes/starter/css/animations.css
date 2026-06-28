@@ -18,10 +18,9 @@
 /* ==================== Hero 第一屏动画 ==================== */
 
 .hero-title,
-.hero-subtitle,
-.hero-status-bar .hero-motd-wrap,
-.hero-status-bar .hero-stats,
-.hero-status-bar .hero-address {
+.hero-motd-wrap,
+.hero-stats,
+.hero-address {
   opacity: 0;
   transform: translateY(30px);
 }
@@ -30,19 +29,15 @@
   animation: heroFloatIn 1s ease forwards, heroFloat 6s ease-in-out 1.2s infinite;
 }
 
-.hero-content.ready .hero-subtitle {
-  animation: heroFloatIn 0.8s ease 0.2s forwards;
-}
-
-.hero-content.ready .hero-status-bar .hero-motd-wrap {
+.hero-content.ready .hero-motd-wrap {
   animation: heroFloatIn 0.7s ease 0.45s forwards;
 }
 
-.hero-content.ready .hero-status-bar .hero-stats {
+.hero-content.ready .hero-stats {
   animation: heroFloatIn 0.7s ease 0.6s forwards;
 }
 
-.hero-content.ready .hero-status-bar .hero-address {
+.hero-content.ready .hero-address {
   animation: heroFloatIn 0.7s ease 0.75s forwards;
 }
 

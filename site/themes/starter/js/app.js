@@ -57,9 +57,7 @@
       if (heroTitle) heroTitle.textContent = g('hero_title') || siteInfo.site_description || '欢迎来到服务器'
 
       const heroSubtitle = document.getElementById('hero-subtitle')
-      if (heroSubtitle) {
-        heroSubtitle.textContent = g('hero_subtitle') || siteInfo.site_slogan || '与我们一起探索无限可能'
-      }
+      // hero-subtitle 已在新的 HTML 结构中移除，保留 JS 引用以防其他主题使用
 
       const addr = document.getElementById('server-address')
       if (addr) addr.textContent = g('server_address_display')
