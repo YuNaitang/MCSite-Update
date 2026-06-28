@@ -2,7 +2,7 @@
 
 class Version
 {
-    const CURRENT = '1.0.2';
+    const CURRENT = '1.0.3';
     const UPDATE_SERVER = 'https://update.candycake.cloud';
 
     /**
