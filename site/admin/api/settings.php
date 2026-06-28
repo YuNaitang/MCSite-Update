@@ -16,14 +16,15 @@ $siteKeys = [
     'logo_url', 'favicon_url',
     'server_address_display',
 
-    // B. Hero 区域
-    'hero_title', 'hero_subtitle', 'hero_description', 'hero_bg_image',
+    // B. Hero 区域（仅前台实际使用的字段）
+    'hero_title',
+    'hero_bg_image',
 
-    // C. 各板块标题
-    'section_servers_title', 'section_servers_description',
-    'section_gallery_title', 'section_gallery_description',
-    'section_news_title', 'section_news_description',
-    'section_comments_title', 'section_comments_description',
+    // C. 各板块标题（前台使用时仅标题，描述暂未渲染）
+    'section_servers_title',
+    'section_gallery_title',
+    'section_news_title',
+    'section_comments_title',
 
     // D. 社交与联系方式
     'qq_group_name', 'qq_group_link',
@@ -31,7 +32,7 @@ $siteKeys = [
     'custom_contacts',
 
     // E. 页脚信息
-    'footer_copyright', 'footer_description',
+    'footer_copyright',
     'icp_number', 'icp_link',
     'footer_custom_html',
 
