@@ -358,8 +358,8 @@
       items.forEach((img) => {
         const div = document.createElement('div')
         div.className = 'gallery-item'
-        const src = McUtils.getStorageUrl(img.thumb_path || img.file_path)
-        const fullSrc = McUtils.getStorageUrl(img.file_path)
+        const src = McUtils.getWebpUrl(img.thumb_path || img.file_path)
+        const fullSrc = McUtils.getWebpUrl(img.file_path)
         div.innerHTML = `
           <img src="${src}" alt="${escapeHtml(img.title || '')}" loading="lazy" data-full="${fullSrc}" />
           ${img.title ? `<div class="gallery-item-title">${escapeHtml(img.title)}</div>` : ''}
@@ -427,7 +427,7 @@
         div.className = 'news-card'
         const summary = McUtils.truncate(McUtils.stripHtml(post.content), 120)
         div.innerHTML = `
-          ${post.cover_image ? `<div class="news-cover"><img src="${McUtils.getStorageUrl(post.cover_image)}" alt="" loading="lazy" /></div>` : ''}
+          ${post.cover_image ? `<div class="news-cover"><img src="${McUtils.getWebpUrl(post.cover_image)}" alt="" loading="lazy" /></div>` : ''}
           <div class="news-body">
             <h3 class="news-title">${post.is_pinned ? '<span class="pin-tag">置顶</span>' : ''}${escapeHtml(post.title)}</h3>
             <p class="news-summary">${escapeHtml(summary)}</p>

@@ -1,6 +1,8 @@
 <?php
 /**
  * 文件上传处理
+ * 上传后保留原始文件，同时生成 85% 质量的 WebP 副本。
+ * 前端优先使用 WebP 以优化性能。
  */
 class Upload
 {
@@ -18,19 +20,17 @@ class Upload
             Response::error('只能上传 jpg/png/gif/webp 图片', 400);
         }
 
-        // Server-side MIME verification (graceful fallback if finfo not available)
+        // Server-side MIME verification
         try {
             if (function_exists('finfo_open')) {
                 $finfo = finfo_open(FILEINFO_MIME_TYPE);
                 $realMime = finfo_file($finfo, $file['tmp_name']);
-                $finfo = null; // implicit close in PHP 8.4+
+                $finfo = null;
                 if (!in_array($realMime, self::$allowedTypes, true)) {
                     Response::error('文件类型不合法', 400);
                 }
             }
-        } catch (Throwable $e) {
-            // finfo failed, skip server-side MIME check (fallback to client type)
-        }
+        } catch (Throwable $e) {}
 
         if ($file['size'] > self::$maxSize) {
             Response::error('图片大小不能超过10MB', 400);
@@ -51,16 +51,67 @@ class Upload
 
         $relativePath = "uploads/{$subDir}/{$filename}";
 
+        // 生成 85% 质量 WebP 副本
+        $webpFilename = pathinfo($filename, PATHINFO_FILENAME) . '.webp';
+        $webpPath = $dir . '/' . $webpFilename;
+        $webpCreated = self::createWebp($path, $webpPath, 85);
+        $webpRelative = $webpCreated ? "uploads/{$subDir}/{$webpFilename}" : null;
+        $webpOriginalSuffix = $webpCreated ? '.orig' : null;
+
+        // 重命名原始文件，标记为原始版本
+        if ($webpCreated) {
+            $origPath = $path . '.orig';
+            rename($path, $origPath);
+            // 前端访问原路径时通过 webp_path 判断
+        }
+
         // 生成缩略图
         $thumbPath = self::createThumb($path, $dir, $filename);
         $thumbRelative = $thumbPath ? "uploads/{$subDir}/thumbs/{$filename}" : null;
 
         return [
-            'path'       => $relativePath,
+            'path'       => $webpCreated ? $webpRelative : $relativePath,
+            'webp_path'  => $webpRelative,
+            'orig_path'  => $webpCreated ? $relativePath . '.orig' : null,
             'thumb_path' => $thumbRelative,
-            'url'        => '/' . $relativePath,
+            'url'        => '/' . ($webpCreated ? $webpRelative : $relativePath),
+            'orig_url'   => $webpCreated ? '/' . $relativePath . '.orig' : '/' . $relativePath,
             'thumb_url'  => $thumbRelative ? '/' . $thumbRelative : null,
         ];
+    }
+
+    /**
+     * 将源图片转为 WebP 并保存到目标路径
+     */
+    private static function createWebp(string $srcPath, string $dstPath, int $quality = 85): bool
+    {
+        if (!function_exists('imagecreatefromjpeg')) {
+            return false;
+        }
+
+        $info = @getimagesize($srcPath);
+        if (!$info) return false;
+
+        $src = match ($info['mime']) {
+            'image/jpeg' => @imagecreatefromjpeg($srcPath),
+            'image/png'  => @imagecreatefrompng($srcPath),
+            'image/gif'  => @imagecreatefromgif($srcPath),
+            'image/webp' => @imagecreatefromwebp($srcPath),
+            default      => null,
+        };
+
+        if (!$src) return false;
+
+        // PNG 需要保留透明度
+        if ($info['mime'] === 'image/png') {
+            imagealphablending($src, false);
+            imagesavealpha($src, true);
+        }
+
+        $result = @imagewebp($src, $dstPath, $quality);
+        imagedestroy($src);
+
+        return $result;
     }
 
     private static function createThumb(string $srcPath, string $dir, string $filename): ?string
@@ -105,10 +156,87 @@ class Upload
         return $thumbPath;
     }
 
+    /**
+     * 获取 WebP 版本路径（如果存在）
+     */
+    public static function webpUrl(string $relativePath): string
+    {
+        $webp = preg_replace('/\.(jpe?g|png|gif)$/i', '.webp', $relativePath);
+        $fullPath = ROOT_PATH . '/' . $webp;
+        if (file_exists($fullPath)) {
+            return '/' . $webp;
+        }
+        return '/' . $relativePath;
+    }
+
     public static function deleteFile(?string $relativePath): void
     {
         if (!$relativePath) return;
         $fullPath = ROOT_PATH . '/' . $relativePath;
         if (file_exists($fullPath)) unlink($fullPath);
+        // 同时删除 WebP 版本
+        $webpPath = ROOT_PATH . '/' . preg_replace('/\.(jpe?g|png|gif)$/i', '.webp', $relativePath);
+        if ($webpPath !== $fullPath && file_exists($webpPath)) unlink($webpPath);
+        // 删除原始版本
+        if (file_exists($fullPath . '.orig')) unlink($fullPath . '.orig');
+    }
+
+    /**
+     * 获取所有已上传文件（资源管理用）
+     */
+    public static function listFiles(string $subDir = '', int $page = 1, int $perPage = 48): array
+    {
+        $base = ROOT_PATH . '/uploads';
+        $scanDir = $base . ($subDir ? '/' . $subDir : '');
+        if (!is_dir($scanDir)) {
+            return ['items' => [], 'total' => 0, 'page' => $page, 'per_page' => $perPage];
+        }
+
+        $files = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($scanDir, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) continue;
+            $relPath = str_replace($base . '/', '', $file->getPathname());
+            $relPath = str_replace('\\', '/', $relPath);
+            // 跳过 thumbs、.orig、.webp（它们会随原文件一起展示）
+            if (strpos($relPath, '/thumbs/') !== false) continue;
+            if (str_ends_with($relPath, '.orig')) continue;
+
+            $ext = strtolower($file->getExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) continue;
+
+            $files[] = [
+                'path'      => $relPath,
+                'url'       => '/' . $relPath,
+                'webp_url'  => self::webpUrl($relPath),
+                'size'      => $file->getSize(),
+                'size_human'=> self::formatSize($file->getSize()),
+                'modified'  => date('Y-m-d H:i:s', $file->getMTime()),
+            ];
+        }
+
+        // 按修改时间降序
+        usort($files, fn($a, $b) => strcmp($b['modified'], $a['modified']));
+
+        $total = count($files);
+        $offset = ($page - 1) * $perPage;
+        $items = array_slice($files, $offset, $perPage);
+
+        return ['items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $perPage];
+    }
+
+    private static function formatSize(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        $size = (float) $bytes;
+        while ($size >= 1024 && $i < count($units) - 1) {
+            $size /= 1024;
+            $i++;
+        }
+        return round($size, 1) . ' ' . $units[$i];
     }
 }

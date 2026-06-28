@@ -139,6 +139,13 @@ if ($seg0 === 'friend-links') {
     exit;
 }
 
+// ---------- media ----------
+if ($seg0 === 'media') {
+    $path = count($segments) > 1 ? rawurldecode(implode('/', array_slice($segments, 1))) : '';
+    require __DIR__ . '/media.php';
+    exit;
+}
+
 // ---------- gallery ----------
 if ($seg0 === 'gallery') {
     $path = count($segments) > 1 ? implode('/', array_slice($segments, 1)) : '';

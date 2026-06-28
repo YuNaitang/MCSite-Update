@@ -54,6 +54,17 @@ const McUtils = (() => {
     return '/' + path.replace(/^\//, '')
   }
 
+  function getWebpUrl(path) {
+    if (!path) return ''
+    if (path.startsWith('http')) return path
+    // 检查是否有 .webp 版本，上传组件在 upload.php 中会同时生成 .webp
+    const webpPath = path.replace(/\.(jpe?g|png|gif)$/i, '.webp')
+    if (webpPath !== path) {
+      return '/' + webpPath.replace(/^\//, '')
+    }
+    return '/' + path.replace(/^\//, '')
+  }
+
   const motdColors = {
     '0': '#000000', '1': '#0000AA', '2': '#00AA00', '3': '#00AAAA',
     '4': '#AA0000', '5': '#AA00AA', '6': '#FFAA00', '7': '#AAAAAA',
@@ -102,7 +113,7 @@ const McUtils = (() => {
     return html
   }
 
-  return { formatDate, truncate, stripHtml, formatNumber, debounce, getStorageUrl, parseMotd }
+  return { formatDate, truncate, stripHtml, formatNumber, debounce, getStorageUrl, getWebpUrl, parseMotd }
 })()
 
 if (typeof window !== 'undefined') {

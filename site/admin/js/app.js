@@ -19,6 +19,7 @@
         '/friend-links': 'friend-links-page',
         '/update': 'update-page',
         '/theme-market': 'theme-market-page',
+        '/media': 'media-page',
     }
 
     function syncHashRoute() {
@@ -68,6 +69,7 @@
     app.component('friend-links-page', FriendLinksPage)
     app.component('theme-market-page', ThemeMarketPage)
     app.component('update-page', UpdatePage)
+    app.component('media-page', MediaPage)
 
     const zhLocale =
         typeof ElementPlusLocaleZhCn !== 'undefined'

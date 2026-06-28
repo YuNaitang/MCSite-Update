@@ -47,6 +47,10 @@ const AppSidebar = {
                         <el-icon><Link /></el-icon>
                         <span>友情链接</span>
                     </el-menu-item>
+                    <el-menu-item index="/media">
+                        <el-icon><Folder /></el-icon>
+                        <span>资源管理</span>
+                    </el-menu-item>
                 </el-menu-item-group>
 
                 <template v-if="store.isSuperAdmin">
