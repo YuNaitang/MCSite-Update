@@ -11,18 +11,32 @@ Auth::requireSuperAdmin();
 $method = Request::method();
 
 $siteKeys = [
+    // A. 站点信息
     'site_name', 'site_description', 'site_keywords',
-    'hero_title', 'hero_subtitle', 'hero_bg_image',
+    'logo_url', 'favicon_url',
+    'server_address_display',
+
+    // B. Hero 区域
+    'hero_title', 'hero_subtitle', 'hero_description', 'hero_bg_image',
+
+    // C. 各板块标题
     'section_servers_title', 'section_servers_description',
     'section_gallery_title', 'section_gallery_description',
     'section_news_title', 'section_news_description',
     'section_comments_title', 'section_comments_description',
-    'icp_number', 'icp_link', 'footer_copyright', 'footer_description',
-    'custom_head_html', 'custom_css',
+
+    // D. 社交与联系方式
     'qq_group_name', 'qq_group_link',
     'discord_name', 'discord_link',
     'custom_contacts',
+
+    // E. 页脚信息
+    'footer_copyright', 'footer_description',
+    'icp_number', 'icp_link',
     'footer_custom_html',
+
+    // F. 自定义代码
+    'custom_head_html', 'custom_css',
 ];
 
 if ($path === 'site') {

@@ -1,6 +1,16 @@
 /**
- * 系统设置（站点信息 + 首页内容 + 页脚 + 自定义代码 + 系统更新 + 备份）
- * 合并原 content-settings 中的字段，消除重复。
+ * 系统设置（结构化分组）
+ *
+ * ── 站点信息
+ * ── 首页 Hero 区域
+ * ── 各板块标题与描述
+ * ── 社交与联系方式
+ * ── 页脚信息
+ * ── 自定义代码
+ * ── 计划任务
+ * ── 系统更新 + 版本备份
+ *
+ * 每个卡片底部留有「扩展槽」用于未来新增字段。
  */
 const SiteSettingsPage = {
     template: `
@@ -10,21 +20,43 @@ const SiteSettingsPage = {
                 <el-button type="primary" :loading="saving" @click="save">保存</el-button>
             </div>
 
+            <!-- ──────── A. 站点信息 ──────── -->
             <div class="card-box" v-loading="loading">
                 <h3>站点信息</h3>
                 <el-form ref="formRef" :model="form" label-width="140px" style="max-width: 720px;">
                     <el-form-item label="站点名称">
-                        <el-input v-model="form.site_name" />
+                        <el-input v-model="form.site_name" placeholder="显示在浏览器标题与页脚" />
                     </el-form-item>
                     <el-form-item label="站点描述">
-                        <el-input v-model="form.site_description" type="textarea" rows="2" />
+                        <el-input v-model="form.site_description" type="textarea" :rows="2" placeholder="SEO 描述" />
                     </el-form-item>
                     <el-form-item label="关键词">
-                        <el-input v-model="form.site_keywords" placeholder="逗号分隔" />
+                        <el-input v-model="form.site_keywords" placeholder="逗号分隔，用于 SEO" />
+                    </el-form-item>
+                    <el-form-item label="Logo">
+                        <div style="display:flex;align-items:flex-start;gap:12px;width:100%;">
+                            <app-image-upload v-model="form.logo_url" />
+                            <el-input v-model="form.logo_url" placeholder="Logo 图片路径或 URL" style="flex:1;" />
+                        </div>
+                    </el-form-item>
+                    <el-form-item label="Favicon">
+                        <div style="display:flex;align-items:flex-start;gap:12px;width:100%;">
+                            <app-image-upload v-model="form.favicon_url" />
+                            <el-input v-model="form.favicon_url" placeholder="浏览器标签图标 URL" style="flex:1;" />
+                        </div>
+                    </el-form-item>
+                    <el-form-item label="站点 URL">
+                        <el-input v-model="form.site_url" placeholder="https://www.yunaitang.top" disabled />
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">安装时设定，不可修改</div>
+                    </el-form-item>
+                    <el-form-item label="服务器地址">
+                        <el-input v-model="form.server_address_display" placeholder="显示在首页的地址" />
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">留空则自动从服务器列表推断</div>
                     </el-form-item>
                 </el-form>
             </div>
 
+            <!-- ──────── B. Hero 区域 ──────── -->
             <div class="card-box" v-loading="loading">
                 <h3>首页 Hero 区域</h3>
                 <el-form :model="form" label-width="140px" style="max-width: 720px;">
@@ -34,42 +66,54 @@ const SiteSettingsPage = {
                     <el-form-item label="副标题">
                         <el-input v-model="form.hero_subtitle" placeholder="副标题或服务器口号" />
                     </el-form-item>
+                    <el-form-item label="描述文字">
+                        <el-input v-model="form.hero_description" type="textarea" :rows="2" placeholder="一段简短的介绍" />
+                    </el-form-item>
                     <el-form-item label="背景图片">
                         <div style="display:flex;align-items:flex-start;gap:12px;width:100%;">
                             <app-image-upload v-model="form.hero_bg_image" />
-                            <el-input v-model="form.hero_bg_image" placeholder="图片路径或URL" style="flex:1;" />
+                            <el-input v-model="form.hero_bg_image" placeholder="建议 1920x1080+" style="flex:1;" />
                         </div>
                     </el-form-item>
                 </el-form>
             </div>
 
+            <!-- ──────── C. 各板块标题与描述 ──────── -->
             <div class="card-box" v-loading="loading">
-                <h3>区域标题设置</h3>
+                <h3>各板块标题与描述</h3>
                 <el-form :model="form" label-width="140px" style="max-width: 720px;">
-                    <el-form-item label="服务器概览">
-                        <el-input v-model="form.section_servers_title" placeholder="服务器状态" />
+                    <el-form-item label="服务器状态">
+                        <el-input v-model="form.section_servers_title" placeholder="服务器状态" style="margin-bottom:6px;" />
+                        <el-input v-model="form.section_servers_description" type="textarea" :rows="1" placeholder="对各服务器的简要介绍" />
                     </el-form-item>
-                    <el-form-item label="图集区域">
-                        <el-input v-model="form.section_gallery_title" placeholder="服务器图集" />
+                    <el-divider style="margin:12px 0;" />
+                    <el-form-item label="服务器图集">
+                        <el-input v-model="form.section_gallery_title" placeholder="服务器图集" style="margin-bottom:6px;" />
+                        <el-input v-model="form.section_gallery_description" type="textarea" :rows="1" placeholder="展现服务器的精彩瞬间" />
                     </el-form-item>
-                    <el-form-item label="动态区域">
-                        <el-input v-model="form.section_news_title" placeholder="服务器动态" />
+                    <el-divider style="margin:12px 0;" />
+                    <el-form-item label="服务器动态">
+                        <el-input v-model="form.section_news_title" placeholder="服务器动态" style="margin-bottom:6px;" />
+                        <el-input v-model="form.section_news_description" type="textarea" :rows="1" placeholder="了解最新的服务器资讯" />
                     </el-form-item>
-                    <el-form-item label="留言区域">
-                        <el-input v-model="form.section_comments_title" placeholder="留言板" />
+                    <el-divider style="margin:12px 0;" />
+                    <el-form-item label="留言板">
+                        <el-input v-model="form.section_comments_title" placeholder="留言板" style="margin-bottom:6px;" />
+                        <el-input v-model="form.section_comments_description" type="textarea" :rows="1" placeholder="畅所欲言，留下你的想法" />
                     </el-form-item>
                 </el-form>
             </div>
 
+            <!-- ──────── D. 社交与联系方式 ──────── -->
             <div class="card-box" v-loading="loading">
-                <h3>社交联系方式</h3>
+                <h3>社交与联系方式</h3>
                 <el-form :model="form" label-width="140px" style="max-width: 720px;">
                     <el-form-item label="QQ 群名称">
                         <el-input v-model="form.qq_group_name" placeholder="如 官方QQ群" />
                     </el-form-item>
                     <el-form-item label="QQ 群链接">
                         <el-input v-model="form.qq_group_link" placeholder="如 https://qm.qq.com/q/xxxxx" />
-                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">支持任意链接，留空则不显示QQ群</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">留空则不显示 QQ 群</div>
                     </el-form-item>
                     <el-divider />
                     <el-form-item label="Kook 名称">
@@ -77,22 +121,26 @@ const SiteSettingsPage = {
                     </el-form-item>
                     <el-form-item label="Kook 链接">
                         <el-input v-model="form.discord_link" placeholder="如 https://kook.top/xxxxx" />
-                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">留空则不显示Kook</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">留空则不显示 Kook</div>
                     </el-form-item>
                     <el-divider />
                     <el-form-item label="其他联系方式">
-                        <el-input v-model="form.custom_contacts" type="textarea" rows="3"
+                        <el-input v-model="form.custom_contacts" type="textarea" :rows="3"
                             placeholder="Bilibili | https://space.bilibili.com/xxx&#10;QQ频道 | https://pd.qq.com/xxx" />
                         <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">每行一条，名称与链接用竖线 | 分隔</div>
                     </el-form-item>
                 </el-form>
             </div>
 
+            <!-- ──────── E. 页脚信息 ──────── -->
             <div class="card-box" v-loading="loading">
                 <h3>页脚信息</h3>
                 <el-form :model="form" label-width="140px" style="max-width: 720px;">
                     <el-form-item label="版权信息">
-                        <el-input v-model="form.footer_copyright" placeholder="留空则自动生成 © 年份" />
+                        <el-input v-model="form.footer_copyright" placeholder="留空则自动生成 © 年份 All rights reserved." />
+                    </el-form-item>
+                    <el-form-item label="页脚描述">
+                        <el-input v-model="form.footer_description" type="textarea" :rows="2" placeholder="显示在页脚的描述文字" />
                     </el-form-item>
                     <el-form-item label="ICP 备案号">
                         <el-input v-model="form.icp_number" placeholder="如 京ICP备xxxxxxxx号" />
@@ -102,25 +150,27 @@ const SiteSettingsPage = {
                         <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">填写后备案号将显示为可点击链接</div>
                     </el-form-item>
                     <el-form-item label="页脚 HTML">
-                        <el-input v-model="form.footer_custom_html" type="textarea" rows="3" placeholder="自定义页脚 HTML 代码" />
+                        <el-input v-model="form.footer_custom_html" type="textarea" :rows="3" placeholder="自定义页脚 HTML 代码" />
                     </el-form-item>
                 </el-form>
             </div>
 
+            <!-- ──────── F. 自定义代码 ──────── -->
             <div class="card-box" v-loading="loading">
                 <h3>自定义代码</h3>
                 <el-form :model="form" label-width="140px" style="max-width: 720px;">
                     <el-form-item label="Head 代码">
-                        <el-input v-model="form.custom_head_html" type="textarea" rows="5"
+                        <el-input v-model="form.custom_head_html" type="textarea" :rows="5"
                             placeholder="统计代码、广告代码等，会注入到页面 &lt;head&gt; 中" />
                     </el-form-item>
                     <el-form-item label="自定义 CSS">
-                        <el-input v-model="form.custom_css" type="textarea" rows="5"
-                            placeholder="自定义样式，注入到页面 &lt;head&gt;" />
+                        <el-input v-model="form.custom_css" type="textarea" :rows="5"
+                            placeholder="自定义样式代码，注入到页面 &lt;head&gt;" />
                     </el-form-item>
                 </el-form>
             </div>
 
+            <!-- ──────── G. 计划任务 ──────── -->
             <div class="card-box" v-loading="cronLoading">
                 <h3>计划任务</h3>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
@@ -134,6 +184,7 @@ const SiteSettingsPage = {
                     <el-descriptions-item label="最后执行时间">{{ cron.last_run || '从未执行' }}</el-descriptions-item>
                     <el-descriptions-item label="最后日志时间">{{ cron.last_log || '无记录' }}</el-descriptions-item>
                     <el-descriptions-item label="今日查询次数">{{ cron.today_logs }}</el-descriptions-item>
+                    <el-descriptions-item label="历史总记录数">{{ cron.total_logs }}</el-descriptions-item>
                     <el-descriptions-item label="Shell 命令">
                         <code style="font-size: 12px; background: var(--bg-deep); padding: 4px 10px; border-radius: 6px; user-select: all;">{{ cron.cron_command }}</code>
                     </el-descriptions-item>
@@ -146,6 +197,7 @@ const SiteSettingsPage = {
                 </div>
             </div>
 
+            <!-- ──────── H. 系统更新 + 版本备份 ──────── -->
             <div class="card-box">
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
                     <h3 style="margin:0 !important;">系统更新</h3>
@@ -244,14 +296,31 @@ const SiteSettingsPage = {
         const saving = ref(false)
         const formRef = ref(null)
         const form = reactive({
+            // A. 站点信息
             site_name: '', site_description: '', site_keywords: '',
-            hero_title: '', hero_subtitle: '', hero_bg_image: '',
+            logo_url: '', favicon_url: '',
+            site_url: '', server_address_display: '',
+
+            // B. Hero 区域
+            hero_title: '', hero_subtitle: '', hero_description: '', hero_bg_image: '',
+
+            // C. 各板块标题
+            section_servers_title: '', section_servers_description: '',
+            section_gallery_title: '', section_gallery_description: '',
+            section_news_title: '', section_news_description: '',
+            section_comments_title: '', section_comments_description: '',
+
+            // D. 社交与联系方式
             qq_group_name: '', qq_group_link: '',
             discord_name: '', discord_link: '',
             custom_contacts: '',
-            section_servers_title: '', section_gallery_title: '',
-            section_news_title: '', section_comments_title: '',
-            icp_number: '', icp_link: '', footer_copyright: '', footer_custom_html: '',
+
+            // E. 页脚信息
+            footer_copyright: '', footer_description: '',
+            icp_number: '', icp_link: '',
+            footer_custom_html: '',
+
+            // F. 自定义代码
             custom_head_html: '', custom_css: '',
         })
 
@@ -299,7 +368,7 @@ const SiteSettingsPage = {
         async function save() {
             saving.value = true
             try {
-                // 合并 site 设置 + content 设置一并保存
+                // 只发送 form 中定义的字段
                 const payload = { ...form }
                 await AdminApi.put('/settings/site', payload)
                 ElementPlus.ElMessage.success('已保存')
