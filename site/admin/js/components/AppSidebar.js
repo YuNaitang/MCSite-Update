@@ -52,29 +52,21 @@ const AppSidebar = {
                 <template v-if="store.isSuperAdmin">
                     <el-menu-item-group>
                         <template #title><span class="sidebar-group-title">系统管理</span></template>
-                        <el-menu-item index="/settings/content">
-                            <el-icon><Edit /></el-icon>
-                            <span>内容配置</span>
+                        <el-menu-item index="/settings/site">
+                            <el-icon><Setting /></el-icon>
+                            <span>系统设置</span>
                         </el-menu-item>
                         <el-menu-item index="/servers">
                             <el-icon><Cpu /></el-icon>
                             <span>服务器管理</span>
                         </el-menu-item>
-                        <el-menu-item index="/users">
-                            <el-icon><Avatar /></el-icon>
-                            <span>用户管理</span>
-                        </el-menu-item>
-                        <el-menu-item index="/settings/site">
-                            <el-icon><Setting /></el-icon>
-                            <span>系统设置</span>
-                        </el-menu-item>
-                        <el-menu-item index="/theme-market">
-                            <el-icon><Brush /></el-icon>
-                            <span>主题</span>
-                        </el-menu-item>
                         <el-menu-item index="/settings/features">
                             <el-icon><Switch /></el-icon>
                             <span>功能开关</span>
+                        </el-menu-item>
+                        <el-menu-item index="/update">
+                            <el-icon><Upload /></el-icon>
+                            <span>系统更新</span>
                         </el-menu-item>
                     </el-menu-item-group>
                 </template>

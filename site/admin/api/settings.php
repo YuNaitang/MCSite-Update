@@ -12,8 +12,13 @@ $method = Request::method();
 
 $siteKeys = [
     'site_name', 'site_description', 'site_keywords',
-    'icp_number', 'icp_link', 'footer_copyright',
-    'custom_head_html',
+    'hero_title', 'hero_subtitle', 'hero_bg_image',
+    'section_servers_title', 'section_servers_description',
+    'section_gallery_title', 'section_gallery_description',
+    'section_news_title', 'section_news_description',
+    'section_comments_title', 'section_comments_description',
+    'icp_number', 'icp_link', 'footer_copyright', 'footer_description',
+    'custom_head_html', 'custom_css',
     'qq_group_name', 'qq_group_link',
     'discord_name', 'discord_link',
     'custom_contacts',

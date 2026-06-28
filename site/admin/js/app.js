@@ -13,9 +13,9 @@
         '/comments': 'comments-page',
         '/whitelist': 'whitelist-page',
         '/users': 'users-page',
-        '/settings/content': 'content-settings-page',
         '/settings/site': 'site-settings-page',
         '/settings/features': 'feature-toggle-page',
+        '/servers': 'servers-config-page',
         '/friend-links': 'friend-links-page',
         '/update': 'update-page',
         '/theme-market': 'theme-market-page',
@@ -56,9 +56,7 @@
 
     app.component('login-page', LoginPage)
     app.component('dashboard-page', DashboardPage)
-    app.component('server-config-page', ServerConfigPage)
     app.component('servers-config-page', ServersConfigPage)
-    app.component('content-settings-page', ContentSettingsPage)
     app.component('gallery-page', GalleryPage)
     app.component('posts-page', PostsPage)
     app.component('post-edit-page', PostEditPage)
