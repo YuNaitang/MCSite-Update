@@ -142,11 +142,10 @@ body {
   transition: all 0.3s;
 }
 
-/* ==================== Hero（第一屏） ==================== */
+/* ==================== Hero ==================== */
 .hero {
   position: relative;
-  height: 100vh;
-  min-height: 600px;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,47 +163,51 @@ body {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(203,166,247,0.04) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 60%, rgba(116,199,236,0.03) 0%, transparent 50%),
-    #1e1e2e;
+  background: var(--bg-main);
   z-index: 0;
   transition: background 0.6s ease;
 }
 
 .hero-content {
   position: relative;
-  z-index: 2;
-  max-width: 900px;
-  padding: 0 40px;
+  z-index: 1;
 }
 
 .hero {
   --hero-text: #cdd6f4;
   --hero-text-sub: #bac2de;
   --hero-text-muted: #6c7086;
-  --hero-divider: rgba(69,71,90,0.5);
-  --hero-addr-bg: rgba(49,50,68,0.85);
-  --hero-addr-border: rgba(69,71,90,0.4);
+  --hero-divider: rgba(69, 71, 90, 0.5);
+  --hero-addr-bg: rgba(49, 50, 68, 0.85);
+  --hero-addr-border: rgba(69, 71, 90, 0.4);
   --hero-btn-bg: #cdd6f4;
   --hero-btn-color: #1e1e2e;
 }
 
-/* Hero 状态区 */
+.hero-title {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin-bottom: 16px;
+  color: var(--hero-text);
+}
+
 .hero-motd-wrap {
-  margin-top: 40px;
   margin-bottom: 40px;
   display: flex;
   justify-content: center;
 }
 
+.hero--dark .hero-motd {
+  background: rgba(49, 50, 68, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 .hero-motd {
   display: inline-block;
-  background: rgba(205,214,244,0.06);
-  color: rgba(205,214,244,0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(205,214,244,0.05);
+  background: var(--surface-0);
+  color: var(--subtext-1);
   font-family: 'JetBrains Mono', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -223,8 +226,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 48px;
-  margin-top: 40px;
-  margin-bottom: 40px;
+  margin-bottom: 48px;
 }
 
 .hero-stat {

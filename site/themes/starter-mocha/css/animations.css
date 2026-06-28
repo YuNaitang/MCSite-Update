@@ -17,65 +17,59 @@
 .fade-up:nth-child(3) { transition-delay: 0.2s; }
 .fade-up:nth-child(4) { transition-delay: 0.3s; }
 
-/* ==================== Hero 第一屏动画 ==================== */
+/* ==================== Hero 动画 ==================== */
 
 .hero-title,
 .hero-motd-wrap,
 .hero-stats,
 .hero-address {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(20px);
 }
 
 .hero-content.ready .hero-title {
-  animation: heroFloatIn 1s ease forwards, heroFloat 6s ease-in-out 1.2s infinite;
+  animation: heroFadeIn 0.8s ease forwards, heroShimmer 4s ease 1.2s infinite;
+  background: linear-gradient(90deg, var(--hero-text) 0%, var(--hero-text) 35%, var(--hero-text-muted) 50%, var(--hero-text) 65%, var(--hero-text) 100%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes heroShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+
+.hero-title.no-shimmer {
+  animation: heroFadeIn 0.8s ease forwards !important;
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+  color: var(--hero-text);
 }
 
 .hero-content.ready .hero-motd-wrap {
-  animation: heroFloatIn 0.7s ease 0.45s forwards;
+  animation: heroFadeIn 0.8s ease 0.15s forwards;
 }
 
 .hero-content.ready .hero-stats {
-  animation: heroFloatIn 0.7s ease 0.6s forwards;
+  animation: heroFadeIn 0.8s ease 0.3s forwards;
 }
 
 .hero-content.ready .hero-address {
-  animation: heroFloatIn 0.7s ease 0.75s forwards;
+  animation: heroFadeIn 0.8s ease 0.45s forwards;
 }
 
-@keyframes heroFloatIn {
+@keyframes heroFadeIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@keyframes heroFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
-}
-
-/* 滚动指示器动画 */
-.hero-scroll {
-  opacity: 0;
-  animation: scrollFadeIn 0.8s ease 1.5s forwards;
-}
-
-@keyframes scrollFadeIn {
-  to { opacity: 1; }
-}
-
-.hero-scroll-arrow {
-  animation: scrollBounce 2s ease-in-out infinite;
-}
-
-@keyframes scrollBounce {
-  0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(6px); opacity: 0.8; }
 }
 
 /* ==================== 悬停效果 ==================== */
