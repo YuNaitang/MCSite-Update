@@ -37,6 +37,9 @@ $siteKeys = [
 
     // F. 自定义代码
     'custom_head_html', 'custom_css',
+
+    // G. 系统更新
+    'update_mirror_url',
 ];
 
 if ($path === 'site') {

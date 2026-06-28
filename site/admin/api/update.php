@@ -13,6 +13,7 @@ if ($method === 'GET' && $sub === 'check') {
     try {
         $result = Updater::check();
         $result['pending_migrations'] = count(Migration::pending());
+        $result['mirror_url'] = Updater::getMirrorUrl();
         Response::success($result);
     } catch (\Throwable $e) {
         Response::success([

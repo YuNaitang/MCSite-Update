@@ -165,6 +165,19 @@ const SiteSettingsPage = {
                 </el-form>
             </div>
 
+            <!-- ──────── G. 系统更新 ──────── -->
+            <div class="card-box" v-loading="loading">
+                <h3>系统更新</h3>
+                <el-form :model="form" label-width="140px" style="max-width: 720px;">
+                    <el-form-item label="镜像下载地址">
+                        <el-input v-model="form.update_mirror_url" placeholder="留空则直连 GitHub" />
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+                            国内服务器可填写镜像加速地址，如 <code>https://github.akams.cn</code>，留空则直连 GitHub
+                        </div>
+                    </el-form-item>
+                </el-form>
+            </div>
+
             <!-- ──────── G. 计划任务 ──────── -->
             <div class="card-box" v-loading="cronLoading">
                 <h3>计划任务</h3>
@@ -317,6 +330,9 @@ const SiteSettingsPage = {
 
             // F. 自定义代码
             custom_head_html: '', custom_css: '',
+
+            // G. 系统更新
+            update_mirror_url: '',
         })
 
         const cronLoading = ref(false)

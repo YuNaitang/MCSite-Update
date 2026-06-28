@@ -9,11 +9,7 @@ class Updater
 {
     const REPO   = 'YuNaitang/MCSite-Update';
     const BRANCH = 'master';
-    // 国内镜像 CDN — 若 GitHub 直连不通则使用镜像
-    // GitHub 官方 archive URL
     const ARCHIVE_URL = 'https://github.com/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip';
-    // 镜像备用（如 ghproxy.com）
-    const MIRROR_URL  = ''; // 留空则不用镜像
 
     private static string $cacheDir  = '';
     private static string $backupDir = '';
@@ -41,6 +37,44 @@ class Updater
     // ──────────────────────────────────────────────
 
     /**
+     * 获取配置的镜像地址（从站点设置读取）
+     */
+    static function getMirrorUrl(): string
+    {
+        return Setting::get('update_mirror_url', '');
+    }
+
+    /**
+     * 获取远程更新日志（从 GitHub 拉取 README 中的更新记录）
+     */
+    static function getChangelog(): string
+    {
+        $url = 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/CHANGELOG.md';
+
+        $ctx = stream_context_create([
+            'http'  => ['timeout' => 8, 'header' => "User-Agent: Beacon-Updater/1.0\r\n"],
+            'ssl'   => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+
+        $body = @file_get_contents($url, false, $ctx);
+        if ($body !== false) {
+            return $body;
+        }
+
+        // 降级：从 README.md 截取更新部分
+        $readmeUrl = 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/README.md';
+        $body = @file_get_contents($readmeUrl, false, $ctx);
+        if ($body !== false) {
+            // 尝试提取 ## 更新日志 之后的内容
+            if (preg_match('/##\s*更新日志(.+?)(?=##\s|\z)/su', $body, $m)) {
+                return trim($m[1]);
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * 从 GitHub 检查是否有新版本。
      * 通过对比远程 Version.php 中的 CURRENT 常量判断。
      */
@@ -55,7 +89,6 @@ class Updater
 
         $body = @file_get_contents($remoteUrl, false, $ctx);
         if ($body === false) {
-            // 退而求其次，用 GitHub API 获取最新 commit 时间
             return self::checkViaApi();
         }
 
@@ -69,11 +102,17 @@ class Updater
         $localVersion  = Version::CURRENT;
         $hasUpdate     = version_compare($remoteVersion, $localVersion, '>');
 
+        // 获取远程 CHANGELOG
+        $changelog = '';
+        if ($hasUpdate) {
+            $changelog = self::getChangelog();
+        }
+
         return [
             'has_update'       => $hasUpdate,
             'current'          => $localVersion,
             'latest_version'   => $remoteVersion,
-            'changelog'        => '',
+            'changelog'        => $changelog,
             'download_url'     => 'https://github.com/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip',
             'released_at'      => '',
             'min_php'          => '8.1',
@@ -195,8 +234,16 @@ class Updater
 
         // 优先尝试直连 GitHub，若失败且有镜像则用镜像
         $urls = [self::ARCHIVE_URL];
-        if (self::MIRROR_URL) {
-            $urls[] = self::MIRROR_URL;
+        $mirrorUrl = self::getMirrorUrl();
+        if ($mirrorUrl) {
+            // 如果镜像地址没有 /repos/ 路径，说明是简单代理，直接拼接
+            $archiveUrl = rtrim($mirrorUrl, '/');
+            if (strpos($archiveUrl, 'api.github.com') === false && strpos($archiveUrl, 'github.com') === false) {
+                // 镜像代理模式：https://mirror/ + 原始 archive URL
+                $urls[] = $archiveUrl . '/' . self::REPO . '/archive/refs/heads/' . self::BRANCH . '.zip';
+            } else {
+                $urls[] = $archiveUrl;
+            }
         }
 
         $success = false;
