@@ -137,20 +137,13 @@ const SiteSettingsPage = {
                     <el-form-item label="版权信息">
                         <el-input v-model="form.footer_copyright" placeholder="留空则自动生成 © 年份 All rights reserved." />
                     </el-form-item>
-                    <el-form-item label="ICP 备案号">
-                        <el-input v-model="form.icp_number" placeholder="如 京ICP备xxxxxxxx号" />
+                    <el-form-item label="ICP 备案 HTML">
+                        <el-input v-model="form.icp_html" type="textarea" :rows="3" placeholder='如 <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026020486号</a>' />
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">填写完整的 HTML，留空则不显示。支持任意 HTML 标签。</div>
                     </el-form-item>
-                    <el-form-item label="备案号链接">
-                        <el-input v-model="form.icp_link" placeholder="如 https://beian.miit.gov.cn/" />
-                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">填写后备案号将显示为可点击链接</div>
-                    </el-form-item>
-                    <el-divider />
-                    <el-form-item label="公安备案号">
-                        <el-input v-model="form.public_security_number" placeholder="如 豫公网安备 41000000000000号" />
-                    </el-form-item>
-                    <el-form-item label="备案号链接">
-                        <el-input v-model="form.public_security_link" placeholder="如 http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=xxx" />
-                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">填写后显示为带警徽图标的可点击链接</div>
+                    <el-form-item label="公安备案 HTML">
+                        <el-input v-model="form.public_security_html" type="textarea" :rows="3" placeholder='如 <a href="https://beian.mps.gov.cn/#/query/webSearch?code=xxx" target="_blank" rel="noopener"><img src="data:image/png;base64,..." style="width:14px;height:14px;vertical-align:middle;" />豫公网安备xxx号</a>' />
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">填写完整的 HTML（含警徽图标），留空则不显示。</div>
                     </el-form-item>
                     <el-form-item label="页脚 HTML">
                         <el-input v-model="form.footer_custom_html" type="textarea" :rows="3" placeholder="自定义页脚 HTML 代码" />
@@ -333,8 +326,8 @@ const SiteSettingsPage = {
 
             // E. 页脚信息
             footer_copyright: '',
-            icp_number: '', icp_link: '',
-            public_security_number: '', public_security_link: '',
+            icp_html: '',
+            public_security_html: '',
             footer_custom_html: '',
 
             // F. 自定义代码

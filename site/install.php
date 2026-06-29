@@ -311,6 +311,7 @@ SQL;
                     ('logo_url', '', '$now', '$now'),
                     ('favicon_url', '', '$now', '$now'),
                     ('icp_number', '', '$now', '$now'),
+                    ('public_security_number', '', '$now', '$now'),
                     ('current_theme', 'starter', '$now', '$now'),
                     ('server_address_display', " . $pdo->quote('play.example.com') . ", '$now', '$now'),
                     ('qq_group', '', '$now', '$now'),

@@ -70,27 +70,16 @@
         footerCopy.textContent = customCopyright || `© ${new Date().getFullYear()} All rights reserved.`
       }
 
-      const icpNum = g('icp_number')
-      const icpLink = g('icp_link')
+      const icpHtml = g('icp_html')
       const icp = document.getElementById('footer-icp')
-      if (icp && icpNum) {
-        if (icpLink) {
-          icp.innerHTML = `<a href="${escapeHtml(icpLink)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;">${escapeHtml(icpNum)}</a>`
-        } else {
-          icp.textContent = icpNum
-        }
+      if (icp && icpHtml) {
+        icp.innerHTML = icpHtml
       }
 
-      const psNum = g('public_security_number')
-      const psLink = g('public_security_link')
+      const policeHtml = g('public_security_html')
       const police = document.getElementById('footer-police')
-      if (police && psNum) {
-        const icon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAhNJREFUeNp8k7tLA0EQh3f3Lk8TFY2NjaJFwMIfwE5BLKz8B2y0sxIrwcrCJ4KFhYkgWAgWYiGCVYqFhYhBEDQYNBFNfOU153t3u2dyhxx8cLvL7De/+WZ2jXPOBP6r3O6ncj6fj8disa/5+Tk7GAy+kslkSgghEGMMRVEgyzLIsoxYLEbDmJ2dJYZh/Eqn07lCoXD/t4HEYnE8mUzKmqZ5fr/fB4/HY2qaZtkPiqKAZVmwLAvDMAiGYcCyLAQCASCm0+kolUo3DMPcL5fLn5FIpNLv9+V2ux0ahkG0Wi2x2+2YyWSCruuwLAuqqsI0TdRqNQwGgzAMg+RyuWo4HL5ijL2XSqWPQqFQk2WZtFotVK1WIQTgOA4sy4JhGOD3+yEIORKJqKqq3omiqNPcQ4IgAPM8/N3HH6S/x0NHByYmx+m0LEtUVHyOSJI0OhYIBMh8Pi8bjcYk9xO4oigwTZP6/X7qOA4HwzDkOA613W7TZDI5uQ/LsrRcLp+k0+kX2+1jPq9vWZa5lwghSCQSsizL1Ov10kQiMb2fJAkkSSKVSoUahtFJp9OvTqfzE2MMPp+PB4PBQQhBOOek1+tR27ZJrVYj+XyeJpNJYts2xsfHwf1+n9i2TYQQ8Pv9PBgM7ufz+aZpmje5XO6tXq/TUqk0LrO8EEIIz/M8r+s6CSEQQhB9Pu4nMpks7u3t1R3H2eac398o/RZgAI7VqG1l6n/2AAAAAElFTkSuQmCC'
-        if (psLink) {
-          police.innerHTML = `<a href="${escapeHtml(psLink)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;display:inline-flex;align-items:center;gap:4px;"><img src="${icon}" alt="" style="width:14px;height:14px;flex-shrink:0;" />${escapeHtml(psNum)}</a>`
-        } else {
-          police.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><img src="${icon}" alt="" style="width:14px;height:14px;flex-shrink:0;" />${escapeHtml(psNum)}</span>`
-        }
+      if (police && policeHtml) {
+        police.innerHTML = policeHtml
       }
 
       const faviconUrl = g('favicon_url')
