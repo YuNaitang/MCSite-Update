@@ -108,7 +108,7 @@ if ($method === 'GET' && $isImagesRoot && $innerPath === '') {
 
 // POST /gallery — 规范：multipart 上传 image
 if ($method === 'POST' && $path === '') {
-    $up = Upload::image('image', 'gallery');
+    $up = Upload::image('image', 'gallery', 'gallery');
     $title = trim((string) Request::post('title', ''));
     $description = trim((string) Request::post('description', ''));
     $categoryId = Request::post('category_id');
@@ -142,7 +142,7 @@ if ($method === 'POST' && $path === '') {
 // 兼容：POST /gallery/images + JSON（先通过 /upload 上传拿到 file_path）；或多部分字段 image
 if ($method === 'POST' && $path === 'images') {
     if (!empty($_FILES['image']) && (int) ($_FILES['image']['error'] ?? 1) === 0) {
-        $up = Upload::image('image', 'gallery');
+        $up = Upload::image('image', 'gallery', 'gallery');
         $title = trim((string) Request::post('title', ''));
         $description = trim((string) Request::post('description', ''));
         $categoryId = Request::post('category_id');

@@ -72,6 +72,10 @@ const SiteSettingsPage = {
                             <el-input v-model="form.hero_bg_image" placeholder="建议 1920x1080+" style="flex:1;" />
                         </div>
                     </el-form-item>
+                    <el-form-item label="背景透明度">
+                        <el-slider v-model="form.hero_bg_opacity" :min="0" :max="100" :step="5" show-input style="width:300px;" />
+                        <div style="font-size:12px;color:var(--text-muted);margin-left:12px;">0=完全透明，100=完全不透明</div>
+                    </el-form-item>
                 </el-form>
             </div>
 
@@ -312,6 +316,7 @@ const SiteSettingsPage = {
 
             // B. Hero 区域
             hero_title: '', hero_subtitle: '', hero_bg_image: '',
+            hero_bg_opacity: 100,
 
             // C. 各板块标题与描述
             section_servers_title: '', section_servers_description: '',

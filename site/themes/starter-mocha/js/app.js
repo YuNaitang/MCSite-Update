@@ -50,7 +50,15 @@
       const siteName = siteInfo.site_name || 'MC Server'
       document.title = siteName
       const logo = document.getElementById('nav-logo')
-      if (logo) logo.textContent = siteName
+      if (logo) {
+        const logoUrl = g('logo_url')
+        if (logoUrl) {
+          const src = logoUrl.startsWith('http') ? logoUrl : '/' + logoUrl.replace(/^\//, '')
+          logo.innerHTML = `<img src="${src}" alt="" style="height:28px;width:auto;vertical-align:middle;margin-right:8px;" />${escapeHtml(siteName)}`
+        } else {
+          logo.textContent = siteName
+        }
+      }
       try { localStorage.setItem('mc_site_name', siteName) } catch(e) {}
 
       const heroTitle = document.getElementById('hero-title')
@@ -160,7 +168,15 @@
       }
 
       // 主题设置
-      applyThemeSettings(res.data.theme_settings || {}, res.data.content_settings || {})
+      const themeSettings = res.data.theme_settings || {}
+      // 兼容：hero_bg_image 映射到 ts.hero_image
+      if (!themeSettings.hero_image && siteInfo.hero_bg_image) {
+        themeSettings.hero_image = siteInfo.hero_bg_image
+      }
+      if (!themeSettings.hero_bg_opacity && g('hero_bg_opacity')) {
+        themeSettings.hero_bg_opacity = g('hero_bg_opacity')
+      }
+      applyThemeSettings(themeSettings, res.data.content_settings || {})
     } catch (e) {
       console.error('加载站点信息失败', e)
     }
@@ -202,6 +218,9 @@
     } else if (heroStyle === 'image') {
       const imgUrl = heroImg.startsWith('http') ? heroImg : '/' + heroImg.replace(/^\//, '')
       if (heroBg) heroBg.style.background = `url("${imgUrl}") center/cover no-repeat`
+      // 背景透明度
+      const opacity = parseInt(ts.hero_bg_opacity || '100', 10)
+      if (heroBg) heroBg.style.opacity = (opacity / 100).toString()
       const overlay = ts.hero_overlay || 'dark'
       if (overlay !== 'none') {
         const overlayEl = document.createElement('div')

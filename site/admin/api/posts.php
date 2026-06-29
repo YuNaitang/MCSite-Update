@@ -22,7 +22,7 @@ function admin_format_post(array $row): array
 
 // POST /admin/api/posts/upload-image
 if ($method === 'POST' && $path === 'upload-image') {
-    $up = Upload::image('image', 'posts');
+    $up = Upload::image('image', 'posts', 'post');
     Response::success([
         'path'       => $up['path'],
         'url'        => $up['url'],

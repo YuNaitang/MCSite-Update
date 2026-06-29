@@ -90,3 +90,49 @@ Web 管理界面：`/admin`（密码在 `.env` 的 `ADMIN_PASSWORD` 中配置）
 - 单表 `releases`，NULL 维度值 = 通配所有
 - 灰度使用 `sha256("grayscale:{release_id}:{device_id}") % 100 < grayscale_pct`
 - API 响应约定见 `docs/api-contract.md`
+
+---
+
+These rules apply to every task in this project unless explicitly overridden. 
+ Bias: caution over speed on non-trivial work. Use judgment on trivial tasks.
+## Rule 1 — Think Before Coding Before writing any code: 1. Restate the goal in your own words 2. List all assumptions you're making 3. Flag anything ambiguous and ask — do not guess 4. Only proceed after assumptions are confirmed or clarified Push back when a simpler approach exists. Stop when confused — name what's unclear.
+## Rule 2 — Minimal Footprint - Solve only what was asked - Do not add helper functions "just in case" - Do not introduce new abstractions unless explicitly requested - Prefer 10 lines that work over 50 lines that "might be useful"
+## Rule 3 — Surgical Changes Only - Change ONLY what the task requires - Do not rename variables for style - Do not reorder imports - Do not reformat code blocks you didn't modify - If you see something worth fixing, mention it — but don't fix it silently
+## Rule 4 — Define Done Before Starting - State the success criteria before writing code - Use those criteria to self-check before declaring completion - Loop until verified — don't just check once and move on - If criteria cannot be fully met, explain what's missing — don't silently deliver a partial solution
+## Rule 5 — Don't Use AI for Deterministic Work Use explicit code for: - Status code checks and error classification - Retry count and interval logic - Data format validation rules - Any judgment where "there is only one right answer" This code should be independently testable with logic visible at a glance.
+## Rule 6 — Resolve Style Conflicts Explicitly When you encounter conflicting patterns: 1. Identify what conflict you found 2. Explain which one you chose and why — prefer the more recent or more tested pattern 3. Stay consistent across the entire task 4. Don't blend both, don't choose silently Flag the unchosen pattern for cleanup.
+## Rule 7 — Read Before You Write Before adding code to a file: 1. Read the file's existing content 2. Check for reusable functions or patterns 3. Confirm naming conventions, import style, and error handling patterns 4. New code should "speak the same language" as its surroundings
+## Rule 8 — Test Business Logic, Not Just Execution When writing tests: - Each test must correspond to a business rule — state it in a comment - Assertions must verify specific output values, not just "returns something" or "not null" - Test boundary conditions explicitly (null, zero, max, exactly-at-threshold) - Do not write tests that only confirm "the code runs"
+## Rule 9 — Checkpoint Long Tasks When executing multi-step tasks: - After each major step, output a progress summary - Format: "Completed: [X], Next: [Y], Current assumptions: [Z]" - If you discover an issue in an earlier step, flag it immediately — don't keep going - Every checkpoint should be an independently verifiable state
+## Rule 10 — Respect Existing Conventions Before adding any code: - Confirm the project's naming conventions (variables, functions, classes, files) - Confirm the standard error handling patterns - Confirm how config and constants are managed - New code should not look like it was "added later"
+## Rule 11 — Fail Loudly, Never Silently If a task cannot be completed as specified: - State clearly what can't be done and why - Do not package "partially done" as "task complete" - Do not use vague language to mask failure ("should work", "in most cases") - When proposing alternatives, clearly explain the gap from the original requirement
+
+---
+
+## 强制性交付工作流约束 (Mandatory Delivery Workflow)
+
+**生效范围**：本规则适用于所有代码、文档及配置文件的修改操作。
+
+**核心约束**：每次完成内容修改后，Agent **必须**严格按以下顺序执行完整的验证与交付流程，**不得**跳过任何步骤：
+
+1.  **全量文本同步（文档与描述）**：
+    - 检查所有受影响的文本文件（包括但不限于 `README.md`、`docs/` 目录下的手册、API 文档、注释说明）。
+    - 确保所有文字描述、使用示例、参数说明与刚完成的代码修改**保持严格一致**，无过时或冲突信息。
+
+2.  **配置完整性校验（配置文件）**：
+    - 检查所有配置文件（如 `.json`、`.yaml`、`.toml`、`.env.example`、`package.json` 等）。
+    - 验证新增或修改的配置项是否正确注册、类型是否匹配、依赖关系是否完整（如有必要，运行配置 Schema 校验工具）。
+
+3.  **逻辑正确性验证（Logic Verification）**：
+    - 执行项目的单元测试、集成测试或 Lint 静态检查脚本（例如 `npm test`、`pytest`、`cargo check` 或 `make lint`）。
+    - 确保修改未引入回归错误，且所有核心功能逻辑符合预期。
+
+4.  **端到端可用性验证（Usability Verification）**：
+    - 模拟真实运行环境，执行关键链路的冒烟测试（例如本地启动服务、运行 CLI 命令、构建生产包或执行核心 API 调用），确保修改后的系统在真实场景下可用且无运行时崩溃。
+
+5.  **Git 安全推送（Deployment）**：
+    - 完成上述 1-4 步且**全部通过**后，方可暂存（`git add`）所有变更。
+    - 编写清晰、语义化的提交信息（Commit Message），提交（`git commit`）并推送（`git push`）至远程仓库。
+
+**异常处理**：
+如果第 1-4 步中**任何一步失败**，Agent 必须**立即停止推送操作**，回滚或修复失败项，并从头重新执行完整验证流程，直至全部通过为止。

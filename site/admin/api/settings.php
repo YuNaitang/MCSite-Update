@@ -17,7 +17,7 @@ $siteKeys = [
     'server_address_display',
 
     // B. Hero 区域
-    'hero_title', 'hero_subtitle', 'hero_bg_image',
+    'hero_title', 'hero_subtitle', 'hero_bg_image', 'hero_bg_opacity',
 
     // C. 各板块标题与描述
     'section_servers_title', 'section_servers_description',

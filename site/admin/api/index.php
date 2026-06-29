@@ -32,7 +32,7 @@ Auth::requireLogin();
 
 // ---------- 兼容：富文本/封面 上传（multipart，字段名 file）----------
 if ($method === 'POST' && $segments === ['upload']) {
-    $r = Upload::image('file', 'gallery');
+    $r = Upload::image('file', 'gallery', 'settings');
     Response::success($r, '上传成功');
 }
 

@@ -88,6 +88,8 @@ body {
 }
 
 .nav-logo {
+  display: inline-flex;
+  align-items: center;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
