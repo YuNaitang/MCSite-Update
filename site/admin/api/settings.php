@@ -33,6 +33,7 @@ $siteKeys = [
     // E. 页脚信息
     'footer_copyright',
     'icp_number', 'icp_link',
+    'public_security_number', 'public_security_link',
     'footer_custom_html',
 
     // F. 自定义代码

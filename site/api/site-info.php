@@ -22,6 +22,7 @@ $contentKeys = [
     'section_news_title', 'section_news_description',
     'section_comments_title', 'section_comments_description',
     'footer_description', 'icp_number', 'icp_link', 'footer_copyright',
+    'public_security_number', 'public_security_link',
     'custom_head_html', 'custom_css',
     'qq_group_name', 'qq_group_link',
     'discord_name', 'discord_link',

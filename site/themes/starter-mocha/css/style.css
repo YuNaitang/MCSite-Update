@@ -1039,6 +1039,15 @@ body {
   margin: 4px 0 0;
 }
 
+.footer-police {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+.footer-police:empty {
+  display: none;
+}
+
 .footer-right {
   display: flex;
   gap: 48px;
